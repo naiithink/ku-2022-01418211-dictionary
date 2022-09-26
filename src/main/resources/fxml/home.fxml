@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.Cursor?>
+<?import javafx.scene.Group?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.Pane?>
+<?import javafx.scene.shape.Rectangle?>
+<?import javafx.scene.text.Font?>
+<?import javafx.scene.text.Text?>
+<?import javafx.scene.text.TextFlow?>
+
+<Pane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="600.0" prefWidth="800.0" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1">
+   <children>
+      <Group layoutX="52.0">
+         <children>
+            <Rectangle fx:id="specialOfferLabel" arcHeight="5.0" arcWidth="5.0" fill="#ff775e" height="68.0" onMouseClicked="#handleSpecialOfferLabel" stroke="TRANSPARENT" strokeType="INSIDE" width="223.0">
+               <cursor>
+                  <Cursor fx:constant="HAND" />
+               </cursor>
+            </Rectangle>
+            <Text fill="#ffe373" layoutX="64.0" layoutY="31.0" onMouseClicked="#handleSpecialOfferLabel" strokeType="OUTSIDE" strokeWidth="0.0" text="UP TO 90% OFF!">
+               <font>
+                  <Font name="Noto Sans Display Black" size="13.0" />
+               </font>
+               <cursor>
+                  <Cursor fx:constant="HAND" />
+               </cursor>
+            </Text>
+            <Text fill="WHITE" layoutX="7.0" layoutY="51.0" onMouseClicked="#handleSpecialOfferLabel" strokeType="OUTSIDE" strokeWidth="0.0" text="Just ฿9.98/m., TRUE Money Wallet accepted">
+               <font>
+                  <Font name="Noto Sans Display Condensed Regular" size="13.0" />
+               </font>
+               <cursor>
+                  <Cursor fx:constant="HAND" />
+               </cursor>
+            </Text>
+         </children>
+      </Group>
+      <Group layoutX="63.0" layoutY="86.0">
+         <children>
+            <ListView fx:id="allWordsListView" layoutX="1.0" layoutY="71.0" prefHeight="362.0" prefWidth="200.0">
+               <cursor>
+                  <Cursor fx:constant="HAND" />
+               </cursor>
+            </ListView>
+            <Label fx:id="allWordsLabel" prefHeight="17.0" prefWidth="198.0" text="All Words">
+               <font>
+                  <Font name="Noto Sans Display Bold" size="14.0" />
+               </font>
+            </Label>
+            <Group layoutX="1.0" layoutY="32.0">
+               <children>
+                  <TextField fx:id="wordSearchTokenTextField" prefHeight="26.0" prefWidth="138.0" promptText="Search for words">
+                     <font>
+                        <Font name="Noto Sans Display Condensed Medium" size="13.0" />
+                     </font>
+                  </TextField>
+                  <Button fx:id="wordSearchButton" layoutX="149.0" mnemonicParsing="false" onAction="#handleWordSearchButton" text="Search">
+                     <font>
+                        <Font name="Noto Sans Display Condensed Medium" size="13.0" />
+                     </font>
+                     <cursor>
+                        <Cursor fx:constant="HAND" />
+                     </cursor>
+                  </Button>
+               </children>
+            </Group>
+            <Button fx:id="addNewWordButton" layoutX="1.0" layoutY="446.0" mnemonicParsing="false" onAction="#handleAddNewWordButton" prefHeight="26.0" prefWidth="200.0" text="+ Add Word">
+               <font>
+                  <Font name="Noto Sans Display Condensed Medium" size="13.0" />
+               </font>
+               <cursor>
+                  <Cursor fx:constant="HAND" />
+               </cursor>
+            </Button>
+         </children>
+      </Group>
+      <Group layoutX="298.8349914550781" layoutY="44.0">
+         <children>
+            <Label fx:id="theWordClassLabel" layoutX="0.165008544921875" layoutY="54.0" text="wordClassLabel">
+               <font>
+                  <Font name="Noto Serif Display Medium" size="17.0" />
+               </font>
+            </Label>
+            <Label fx:id="theWordLiteralLabel" layoutX="0.165008544921875" prefHeight="38.0" prefWidth="442.0" text="wordLiteralLabel">
+               <font>
+                  <Font name="Noto Serif Display ExtraBold" size="33.0" />
+               </font>
+            </Label>
+         </children>
+      </Group>
+      <Group layoutX="299.0" layoutY="442.0">
+         <children>
+            <Label fx:id="theWordExampleSentencesLabelLabel" prefHeight="17.0" prefWidth="198.0" text="Example in Sentence">
+               <font>
+                  <Font name="Noto Sans Display Bold" size="14.0" />
+               </font>
+            </Label>
+            <ListView fx:id="theExampleSentencesListView" focusTraversable="false" layoutY="29.0" prefHeight="87.0" prefWidth="445.0" />
+         </children>
+      </Group>
+      <Label fx:id="theWordDefinitionLabelLabel" layoutX="299.0" layoutY="167.0" prefHeight="17.0" prefWidth="198.0" text="Definition">
+         <font>
+            <Font name="Noto Sans Display Bold" size="14.0" />
+         </font>
+      </Label>
+      <TextFlow fx:id="theWordDefinitionTextFlow" layoutX="300.0" layoutY="195.0" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="198.0" prefWidth="442.0" />
+      <Rectangle arcHeight="5.0" arcWidth="5.0" fill="DODGERBLUE" height="37.0" layoutX="602.0" layoutY="8.0" onMouseClicked="#handleSpecialOfferLabel" rotate="21.8" stroke="TRANSPARENT" strokeType="INSIDE" width="266.0">
+         <cursor>
+            <Cursor fx:constant="HAND" />
+         </cursor>
+      </Rectangle>
+      <Label fx:id="allWordsLabel1" layoutX="728.0" layoutY="20.0" onMouseClicked="#handleSpecialOfferLabel" rotate="21.8" text="FREE" textAlignment="CENTER" textFill="WHITE">
+         <font>
+            <Font name="Noto Sans Display Bold" size="14.0" />
+         </font>
+         <cursor>
+            <Cursor fx:constant="HAND" />
+         </cursor>
+      </Label>
+   </children>
+</Pane>
