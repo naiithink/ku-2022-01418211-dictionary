@@ -35,19 +35,19 @@
             <Cursor fx:constant="HAND" />
          </cursor>
       </Button>
-      <Group layoutX="130.0" layoutY="124.0">
+      <Group layoutX="130.0" layoutY="121.0">
          <children>
-            <TextField fx:id="newWordLiteralTextField" layoutX="103.0" prefHeight="26.0" prefWidth="261.0" promptText="Your brand new word goes here...">
+            <TextField fx:id="newWordLiteralTextField" layoutX="103.0" layoutY="3.0" prefHeight="27.0" prefWidth="255.0" promptText="Your brand new word goes here...">
                <font>
                   <Font name="Noto Sans Display Condensed Medium" size="13.0" />
                </font>
             </TextField>
-            <Label layoutY="3.0" text="New Word">
+            <Label layoutY="6.0" text="New Word">
                <font>
                   <Font name="Noto Sans Display SemiBold" size="14.0" />
                </font>
             </Label>
-            <ChoiceBox fx:id="newWordClassChoiceBox" layoutX="379.0" prefHeight="26.0" prefWidth="124.0">
+            <ChoiceBox fx:id="newWordClassChoiceBox" layoutX="374.0" layoutY="3.0" prefHeight="26.0" prefWidth="130.0">
                <cursor>
                   <Cursor fx:constant="HAND" />
                </cursor>

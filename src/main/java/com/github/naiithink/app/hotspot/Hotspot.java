@@ -136,6 +136,15 @@ public final class Hotspot {
                 return value;
             }
         }
+
+        public static class PlaceHolder {
+
+            public static final String WORD_CLASS_CHOICE_BOX_GUIDE;
+
+            static {
+                WORD_CLASS_CHOICE_BOX_GUIDE = "Select Word Class";
+            }
+        }
     }
 
     public static class Resource {

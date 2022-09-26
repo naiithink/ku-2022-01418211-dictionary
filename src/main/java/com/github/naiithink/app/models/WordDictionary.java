@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -97,5 +98,15 @@ public final class WordDictionary {
 
     public List<String> getAllWordEntries() {
         return new ArrayList<String>(wordTable.keySet());
+    }
+
+    public List<Word> getAllWords() {
+        List<Word> allWords = new CopyOnWriteArrayList<>();
+
+        for (Word word : wordTable.values()) {
+            allWords.add(word);
+        }
+
+        return allWords;
     }
 }

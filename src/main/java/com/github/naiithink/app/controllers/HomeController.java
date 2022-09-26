@@ -1,8 +1,17 @@
 package com.github.naiithink.app.controllers;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -10,11 +19,14 @@ import com.github.naiithink.app.controllers.StageController.NaiiThinkGetStageCon
 import com.github.naiithink.app.controllers.StageController.NaiiThinkStageController;
 import com.github.naiithink.app.hotspot.Hotspot;
 import com.github.naiithink.app.models.Word;
+import com.github.naiithink.app.models.WordClass;
 import com.github.naiithink.app.models.WordDictionary;
+import com.github.naiithink.app.util.Filterer;
 import com.github.naiithink.app.util.events.listeners.EventListener;
 
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
+import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
@@ -22,6 +34,8 @@ import javafx.geometry.Insets;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBar.ButtonData;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.CheckBox;
+import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
@@ -41,13 +55,23 @@ public final class HomeController
 
     private static Logger logger;
 
+    private static ExecutorService eService;
+
     private static StageController stageController;
 
     private static WordDictionary wordDictionary;
 
     private static Set<String> allWordEntries;
 
+    private static Set<Word> allWordSet;
+
+    private static Set<String> filteredAllWordEntries;
+
+    private static Set<Word> filteredAllWordSet;
+
     private static Set<String> searchResultList;
+
+    private static Optional<WordClass> wordClassFilter;
 
     @FXML
     private Label allWordsLabel;
@@ -60,6 +84,12 @@ public final class HomeController
 
     @FXML
     private Button wordSearchButton;
+
+    @FXML
+    private ChoiceBox<String> wordClassFilterChoiceBox;
+
+    @FXML
+    private CheckBox showExactSearchMatchCheckBox;
 
     @FXML
     private Label theWordLiteralLabel;
@@ -82,14 +112,84 @@ public final class HomeController
     @FXML
     private ListView<String> theExampleSentencesListView;
 
+    private enum SkimOption {
+
+        WORD_LITERAL,
+        DEFINITION,
+        SENTENCES;
+    }
+
+    private class SkimWordsThread
+            implements Callable<Set<String>> {
+
+        private volatile SkimOption skimScope;
+        
+        private volatile Collection<? extends Word> wordsToSkim;
+
+        private volatile String searchSequence;
+
+        public SkimWordsThread(SkimOption scope,
+                                          Collection<? extends Word> words,
+                                          String sequence) {
+
+            skimScope = scope;
+            wordsToSkim = words;
+            searchSequence = new String(sequence);
+        }
+
+        @Override
+        public Set<String> call() {
+            Set<String> result = new CopyOnWriteArraySet<>();
+
+            switch (skimScope) {
+                case WORD_LITERAL:
+                    for (Word word : wordsToSkim) {
+                        if (word.getWordLiteral().contains(searchSequence)) {
+                            result.add(word.getWordLiteral());
+                        }
+                    }
+
+                    break;
+                case DEFINITION:
+                    for (Word word : wordsToSkim) {
+                        if (word.getExampleInSentences().contains(searchSequence)) {
+                            result.add(word.getWordLiteral());
+                        }
+                    }
+
+                    break;
+                case SENTENCES:
+                    for (Word word : wordsToSkim) {
+                        for (String sentence : word.getExampleInSentences()) {
+                            if (sentence.contains(searchSequence)) {
+                                result.add(word.getWordLiteral());
+                            }
+                        }
+                    }
+
+                    break;
+            };
+
+            return result;
+        }
+    }
+
     static {
         logger = Logger.getLogger(HomeController.class.getName());
+
+        eService = Executors.newFixedThreadPool(3);
 
         stageController = StageController.getInstance();
 
         wordDictionary = WordDictionary.getDictionary();
+
         allWordEntries = new ConcurrentSkipListSet<>();
+        filteredAllWordEntries = new ConcurrentSkipListSet<>();
         searchResultList = new ConcurrentSkipListSet<>();
+        allWordSet = new ConcurrentSkipListSet<>();
+        filteredAllWordSet = new ConcurrentSkipListSet<>();
+
+        wordClassFilter = Optional.empty();
     }
 
     @NaiiThinkGetStageControllerInstance
@@ -107,6 +207,18 @@ public final class HomeController
 
     @FXML
     public void initialize() {
+        System.out.println("yes");
+        List<String> wordClassChoiceBoxOptionsList = new CopyOnWriteArrayList<>();
+        String[] wordClassArray = WordClass.getAllPrettyPrintedWordClass();
+
+        wordClassChoiceBoxOptionsList.add(Hotspot.UI.PlaceHolder.WORD_CLASS_CHOICE_BOX_GUIDE);
+
+        for (String wordClass : wordClassArray) {
+            wordClassChoiceBoxOptionsList.add(wordClass);
+        }
+
+        wordClassFilterChoiceBox.setItems(FXCollections.observableArrayList(wordClassChoiceBoxOptionsList));
+
         theWordDefinitionTextFlow.setLineSpacing(2.0);
         theWordDefinitionTextFlow.setPadding(new Insets(1.0, 1.0, 1.0, 1.0));
         theWordDefinitionTextFlow.setTextAlignment(TextAlignment.LEFT);
@@ -120,12 +232,18 @@ public final class HomeController
             }
         });
 
+        allWordEntries.addAll(wordDictionary.getAllWordEntries());
+        filteredAllWordEntries.addAll(allWordEntries);
+        allWordSet.addAll(wordDictionary.getAllWords());
+        filteredAllWordSet.addAll(allWordSet);
+
         handleSelectedWord();
         showAllWordsListView();
         initialView();
     }
 
     private void initialView() {
+        wordClassFilterChoiceBox.valueProperty().set(Hotspot.UI.PlaceHolder.WORD_CLASS_CHOICE_BOX_GUIDE);
         showAllWordsListView();
         allWordsListView.getSelectionModel().select(Hotspot.DEFAULT_WORD_ENTRY);
         allWordsListView.scrollTo(Hotspot.DEFAULT_WORD_ENTRY);
@@ -155,7 +273,6 @@ public final class HomeController
                     System.out.println("Woo hoo! user considered subscribing.");
             }
         }
-
     }
 
     @FXML
@@ -169,24 +286,109 @@ public final class HomeController
     }
 
     private void performWordSearch() {
-        searchResultList.clear();
+        Filterer<List<Word>, Optional<WordClass>> wordClassFilterer = (data, filter) -> {
+            if (filter.isPresent() == false) {
+                return data;
+            }
+
+            List<Word> result = new CopyOnWriteArrayList<>();
+
+            for (Word word : data) {
+                if (filter.get().equals(word.getWordClass())) {
+                    result.add(word);
+                }
+            }
+
+            return result;
+        };
+
+        filteredAllWordEntries.clear();
+        filteredAllWordSet.clear();
+
         Optional<String> searchToken = Optional.ofNullable(wordSearchTokenTextField.getText())
-                                               .map(s -> s.toLowerCase().trim())
-                                               .or(() -> Optional.of(new String()));
+                                               .map(s -> s.toLowerCase().trim());
+
+        String wordClassSelectedFilter = wordClassFilterChoiceBox.getValue().toUpperCase();
+
+        if (wordClassSelectedFilter.equals(Hotspot.UI.PlaceHolder.WORD_CLASS_CHOICE_BOX_GUIDE.toUpperCase())) {
+            wordClassFilter = Optional.empty();
+        } else {
+            wordClassFilter = Optional.ofNullable(Enum.valueOf(WordClass.class, wordClassSelectedFilter));
+        }
+
+        Set<Word> filteredWordSet = new CopyOnWriteArraySet<>(wordClassFilterer.filter(wordDictionary.getAllWords(), wordClassFilter));
+
+        for (Word word : filteredWordSet) {
+            filteredAllWordEntries.add(word.getWordLiteral());
+            filteredAllWordSet.add(word);
+        }
 
         if (searchToken.get().isBlank()) {
             showAllWordsListView();
-        } else if (wordDictionary.containsWord(searchToken.get())) {
-            searchResultList.add(wordDictionary.getWord(searchToken.get()).getWordLiteral());
-            allWordsListView.getItems().setAll(searchResultList);
-        } else if (wordDictionary.containsWord(searchToken.get()) == false) {
-            allWordsListView.getItems().clear();
+            return;
         }
+
+        if (showExactSearchMatchCheckBox.isSelected()) {
+            Set<String> searchTokenSet = new CopyOnWriteArraySet<>();
+            searchTokenSet.add(searchToken.get());
+
+            filteredAllWordEntries.retainAll(searchTokenSet);
+        } else {
+            // public SkimWordsThread(SkimOption scope,
+            // Collection<? extends Word> words,
+            // String sequence) { 
+
+            // List<Callable<Set<String>>> skimTasks = new CopyOnWriteArrayList<>();
+
+            // skimTasks.add(new SkimWordsThread(SkimOption.WORD_LITERAL,
+            //                                              filteredAllWordSet,
+            //                                              searchToken.get()));
+            // skimTasks.add(new SkimWordsThread(SkimOption.DEFINITION,
+            //                                              filteredAllWordSet,
+            //                                              searchToken.get()));
+            // skimTasks.add(new SkimWordsThread(SkimOption.SENTENCES,
+            //                                              filteredAllWordSet,
+            //                                              searchToken.get()));
+
+            try {
+                Future<Set<String>> skimLiteralFuture = eService.submit(this.new SkimWordsThread(SkimOption.WORD_LITERAL,
+                                                                                            filteredAllWordSet,
+                                                                                            searchToken.get()));
+                Future<Set<String>> skimDefinitionFuture = eService.submit(this.new SkimWordsThread(SkimOption.DEFINITION,
+                                                                                            filteredAllWordSet,
+                                                                                            searchToken.get()));
+                Future<Set<String>> skimSentencesFuture = eService.submit(this.new SkimWordsThread(SkimOption.SENTENCES,
+                                                                                            filteredAllWordSet,
+                                                                                            searchToken.get()));
+
+                while ((skimLiteralFuture.isDone()
+                        && skimDefinitionFuture.isDone()
+                        && skimSentencesFuture.isDone()) == false) {
+
+                    if (skimLiteralFuture.isDone()) {
+                        filteredAllWordEntries.addAll(skimLiteralFuture.get());
+                    }
+
+                    if (skimDefinitionFuture.isDone()) {
+                        filteredAllWordEntries.addAll(skimDefinitionFuture.get());
+                    }
+
+                    if (skimSentencesFuture.isDone()) {
+                        filteredAllWordEntries.addAll(skimSentencesFuture.get());
+                    }
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } catch (ExecutionException e) {
+                e.printStackTrace();
+            }
+        }
+
+        showAllWordsListView();
     }
 
     private void showAllWordsListView() {
-        allWordEntries.addAll(wordDictionary.getAllWordEntries());
-        allWordsListView.getItems().setAll(allWordEntries);
+        allWordsListView.getItems().setAll(filteredAllWordEntries);
         allWordsListView.refresh();
     }
 

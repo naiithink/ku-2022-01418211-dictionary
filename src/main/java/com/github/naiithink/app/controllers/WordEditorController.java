@@ -110,7 +110,15 @@ public final class WordEditorController {
 
     @FXML
     public void initialize() {
-        newWordClassChoiceBox.setItems(FXCollections.observableArrayList(WordClass.getAllPrettyPrintedWordClass()));
+        List<String> newWordClassChoiceBoxOptionList = new CopyOnWriteArrayList<>();
+        String[] wordClassArray = WordClass.getAllPrettyPrintedWordClass();
+
+        newWordClassChoiceBoxOptionList.add(Hotspot.UI.PlaceHolder.WORD_CLASS_CHOICE_BOX_GUIDE);
+        for (String wordClass : wordClassArray) {
+            newWordClassChoiceBoxOptionList.add(wordClass);
+        }
+
+        newWordClassChoiceBox.setItems(FXCollections.observableArrayList(newWordClassChoiceBoxOptionList));
         removeSelectedExampleSentence();
         initialView();
         addNewWordResultBanner.setVisible(false);
@@ -126,9 +134,9 @@ public final class WordEditorController {
     }
 
     private void initialView() {
+        newWordClassChoiceBox.valueProperty().set(Hotspot.UI.PlaceHolder.WORD_CLASS_CHOICE_BOX_GUIDE);
         addNewWordResultBanner.setVisible(false);
         newWordLiteralTextField.clear();
-        newWordClassChoiceBox.valueProperty().setValue(null);
         newWordLiteralAccent.setStroke(Color.TRANSPARENT);
         newWordDefinitionTextArea.clear();
         exampleSentencesListView.getItems().clear();
@@ -163,7 +171,7 @@ public final class WordEditorController {
     private void performAddNewWord() {
         String wordLiteralString = newWordLiteralTextField.getText().toLowerCase();
 
-        if (newWordClassChoiceBox.getValue() == null) {
+        if (newWordClassChoiceBox.getValue() == Hotspot.UI.PlaceHolder.WORD_CLASS_CHOICE_BOX_GUIDE) {
             addNewWordResultLabel.setText("Word class must be selected");
             addNewWordResultBannerFill.setFill(Color.valueOf(Hotspot.UI.Color.YELLOW.getValue()));
             newWordLiteralAccent.setStroke(Color.valueOf(Hotspot.UI.Color.YELLOW.getValue()));
