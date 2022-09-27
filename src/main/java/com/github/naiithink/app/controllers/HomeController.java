@@ -55,7 +55,7 @@ public final class HomeController
 
     private static Logger logger;
 
-    private static ExecutorService eService;
+    // private static ExecutorService eService;
 
     private static StageController stageController;
 
@@ -69,7 +69,7 @@ public final class HomeController
 
     private static Set<Word> filteredAllWordSet;
 
-    private static Set<String> searchResultList;
+    private static Set<String> searchResultWordEntrySet;
 
     private static Optional<WordClass> wordClassFilter;
 
@@ -177,7 +177,7 @@ public final class HomeController
     static {
         logger = Logger.getLogger(HomeController.class.getName());
 
-        eService = Executors.newFixedThreadPool(3);
+        // eService = Executors.newFixedThreadPool(3);
 
         stageController = StageController.getInstance();
 
@@ -185,9 +185,9 @@ public final class HomeController
 
         allWordEntries = new ConcurrentSkipListSet<>();
         filteredAllWordEntries = new ConcurrentSkipListSet<>();
-        searchResultList = new ConcurrentSkipListSet<>();
-        allWordSet = new ConcurrentSkipListSet<>();
-        filteredAllWordSet = new ConcurrentSkipListSet<>();
+        allWordSet = new CopyOnWriteArraySet<>();
+        filteredAllWordSet = new CopyOnWriteArraySet<>();
+        searchResultWordEntrySet = new ConcurrentSkipListSet<>();
 
         wordClassFilter = Optional.empty();
     }
@@ -207,7 +207,6 @@ public final class HomeController
 
     @FXML
     public void initialize() {
-        System.out.println("yes");
         List<String> wordClassChoiceBoxOptionsList = new CopyOnWriteArrayList<>();
         String[] wordClassArray = WordClass.getAllPrettyPrintedWordClass();
 
@@ -286,12 +285,12 @@ public final class HomeController
     }
 
     private void performWordSearch() {
-        Filterer<List<Word>, Optional<WordClass>> wordClassFilterer = (data, filter) -> {
+        Filterer<Set<Word>, Optional<WordClass>> wordClassFilterer = (data, filter) -> {
             if (filter.isPresent() == false) {
                 return data;
             }
 
-            List<Word> result = new CopyOnWriteArrayList<>();
+            Set<Word> result = new ConcurrentSkipListSet<>();
 
             for (Word word : data) {
                 if (filter.get().equals(word.getWordClass())) {
@@ -304,6 +303,7 @@ public final class HomeController
 
         filteredAllWordEntries.clear();
         filteredAllWordSet.clear();
+        searchResultWordEntrySet.clear();
 
         Optional<String> searchToken = Optional.ofNullable(wordSearchTokenTextField.getText())
                                                .map(s -> s.toLowerCase().trim());
@@ -323,9 +323,12 @@ public final class HomeController
             filteredAllWordSet.add(word);
         }
 
-        if (searchToken.get().isBlank()) {
-            showAllWordsListView();
+        if (searchToken.get().isBlank()
+            && wordClassFilter.isPresent()) {
+            updateAllWordsListView(filteredAllWordEntries);
             return;
+        } else {
+            updateAllWordsListView(allWordEntries);
         }
 
         if (showExactSearchMatchCheckBox.isSelected()) {
@@ -333,7 +336,31 @@ public final class HomeController
             searchTokenSet.add(searchToken.get());
 
             filteredAllWordEntries.retainAll(searchTokenSet);
+
+            updateAllWordsListView(filteredAllWordEntries);
         } else {
+            for (Word word : filteredAllWordSet) {
+                if (word.getWordLiteral().contains(searchToken.get())) {
+                    searchResultWordEntrySet.add(word.getWordLiteral());
+                }
+            }
+
+            for (Word word : filteredAllWordSet) {
+                if (word.getExampleInSentences().contains(searchToken.get())) {
+                    searchResultWordEntrySet.add(word.getWordLiteral());
+                }
+            }
+
+            for (Word word : filteredAllWordSet) {
+                for (String sentence : word.getExampleInSentences()) {
+                    if (sentence.contains(searchToken.get())) {
+                        searchResultWordEntrySet.add(word.getWordLiteral());
+                    }
+                }
+            }
+
+            updateAllWordsListView(searchResultWordEntrySet);
+
             // public SkimWordsThread(SkimOption scope,
             // Collection<? extends Word> words,
             // String sequence) { 
@@ -350,45 +377,63 @@ public final class HomeController
             //                                              filteredAllWordSet,
             //                                              searchToken.get()));
 
-            try {
-                Future<Set<String>> skimLiteralFuture = eService.submit(this.new SkimWordsThread(SkimOption.WORD_LITERAL,
-                                                                                            filteredAllWordSet,
-                                                                                            searchToken.get()));
-                Future<Set<String>> skimDefinitionFuture = eService.submit(this.new SkimWordsThread(SkimOption.DEFINITION,
-                                                                                            filteredAllWordSet,
-                                                                                            searchToken.get()));
-                Future<Set<String>> skimSentencesFuture = eService.submit(this.new SkimWordsThread(SkimOption.SENTENCES,
-                                                                                            filteredAllWordSet,
-                                                                                            searchToken.get()));
+            // try {
+            //     Future<Set<String>> skimLiteralFuture = eService.submit(this.new SkimWordsThread(SkimOption.WORD_LITERAL,
+            //                                                                                      filteredAllWordSet,
+            //                                                                                      searchToken.get()));
+            //     logger.log(Level.INFO, "skimLiteralFuture task");
 
-                while ((skimLiteralFuture.isDone()
-                        && skimDefinitionFuture.isDone()
-                        && skimSentencesFuture.isDone()) == false) {
+            //     Future<Set<String>> skimDefinitionFuture = eService.submit(this.new SkimWordsThread(SkimOption.DEFINITION,
+            //                                                                                         filteredAllWordSet,
+            //                                                                                         searchToken.get()));
+            //     logger.log(Level.INFO, "skimDefinitionFuture task");
 
-                    if (skimLiteralFuture.isDone()) {
-                        filteredAllWordEntries.addAll(skimLiteralFuture.get());
-                    }
+            //     Future<Set<String>> skimSentencesFuture = eService.submit(this.new SkimWordsThread(SkimOption.SENTENCES,
+            //                                                                                        filteredAllWordSet,
+            //                                                                                        searchToken.get()));
+            //     logger.log(Level.INFO, "skimSentencesFuture task");
 
-                    if (skimDefinitionFuture.isDone()) {
-                        filteredAllWordEntries.addAll(skimDefinitionFuture.get());
-                    }
+            //     while ((skimLiteralFuture.isDone()
+            //             && skimDefinitionFuture.isDone()
+            //             && skimSentencesFuture.isDone()) == false) {
 
-                    if (skimSentencesFuture.isDone()) {
-                        filteredAllWordEntries.addAll(skimSentencesFuture.get());
-                    }
-                }
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            } catch (ExecutionException e) {
-                e.printStackTrace();
-            }
+            //         if (skimLiteralFuture.isDone()) {
+            //             filteredAllWordEntries.addAll(skimLiteralFuture.get());
+            //             skimLiteralFuture.cancel(true);
+            //             logger.log(Level.INFO, "skimLiteralFuture is cancelled");
+            //         }
+
+            //         if (skimDefinitionFuture.isDone()) {
+            //             filteredAllWordEntries.addAll(skimDefinitionFuture.get());
+            //             skimDefinitionFuture.cancel(true);
+            //             logger.log(Level.INFO, "skimDefinitionFuture is cancelled");
+
+            //         }
+
+            //         if (skimSentencesFuture.isDone()) {
+            //             filteredAllWordEntries.addAll(skimSentencesFuture.get());
+            //             skimSentencesFuture.cancel(true);
+            //             logger.log(Level.INFO, "skimSentencesFuture is cancelled");
+
+            //         }
+            //     }
+            // } catch (InterruptedException e) {
+            //     e.printStackTrace();
+            // } catch (ExecutionException e) {
+            //     e.printStackTrace();
+            // }
         }
 
-        showAllWordsListView();
+        // showAllWordsListView();
+    }
+
+    private void updateAllWordsListView(Set<String> wordsToShow) {
+        allWordsListView.getItems().setAll(wordsToShow);
+        allWordsListView.refresh();
     }
 
     private void showAllWordsListView() {
-        allWordsListView.getItems().setAll(filteredAllWordEntries);
+        allWordsListView.getItems().setAll(allWordEntries);
         allWordsListView.refresh();
     }
 
@@ -424,7 +469,8 @@ public final class HomeController
 
     @Override
     public void update(Object context) {
-        showAllWordsListView();
+        updateAllWordsListView(wordDictionary.getAllWordEntries());
+        // showAllWordsListView();
         logger.log(Level.INFO, "Got an event!");
     }
 }

@@ -22,8 +22,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.github.naiithink.app.helpers.ResourcePrefix;
-
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
@@ -48,7 +46,9 @@ public final class StageController {
 
     private Logger logger;
 
-    private Path sceneResourcePath;
+    private Path sceneResourceIndexPath;
+
+    private Path sceneResourcePrefixPath;
 
     private Map<String, SceneMap> controllerTable;
 
@@ -107,15 +107,15 @@ public final class StageController {
         return instance;
     }
 
-    public void dispatch(Path sceneResourcePath,
-                         Path sceneResourcePrefix,
+    public void dispatch(Path sceneResourceIndexPath,
+                         Path sceneResourcePrefixPath,
                          Object mainApp,
                          Stage primaryStage,
                          String primaryStageTitle,
                          double primaryStageWidth,
                          double primaryStageHeight) {
 
-        Objects.nonNull(sceneResourcePath);
+        Objects.nonNull(sceneResourceIndexPath);
         Objects.nonNull(mainApp);
         Objects.nonNull(primaryStage);
 
@@ -125,7 +125,8 @@ public final class StageController {
             System.exit(1);
         }
 
-        this.sceneResourcePath = sceneResourcePath;
+        this.sceneResourceIndexPath = sceneResourceIndexPath;
+        this.sceneResourcePrefixPath = sceneResourcePrefixPath;
         this.mainApp = mainApp;
         this.primaryStage = primaryStage;
         this.primaryStageTitle = primaryStageTitle;
@@ -139,11 +140,11 @@ public final class StageController {
         //     e.printStackTrace();
         // }
 
-        try (InputStream in = Files.newInputStream(sceneResourcePrefix.resolve(this.sceneResourcePath))) {
+        try (InputStream in = Files.newInputStream(sceneResourceIndexPath)) {
 
             Objects.nonNull(in);
 
-            this.resourceIndexProperties.load(in);
+            resourceIndexProperties.load(in);
         } catch (IOException e) {
             logger.log(Level.SEVERE, "Cannot get to FXML index file");
         }
@@ -158,9 +159,12 @@ public final class StageController {
         Scene scene;
 
         try {
-            Set<String> sceneEntries = this.resourceIndexProperties.stringPropertyNames();
+            Set<String> sceneEntries = resourceIndexProperties.stringPropertyNames();
 
             for (String sceneEntry : sceneEntries) {
+
+                loader = new FXMLLoader();
+
                 String[] sceneIndexPropertyFields = resourceIndexProperties.getProperty(sceneEntry).split(INDEX_PROPERTY_TOKEN);
 
                 if (sceneIndexPropertyFields.length == 0
@@ -178,9 +182,11 @@ public final class StageController {
                 if (sceneIndexPropertyFields.length == 1) {
                     logger.log(Level.WARNING, "FXML index '" + sceneEntry + "' does not have declared controller");
 
-                    controllerTable.put(sceneEntry, new SceneMap(new Scene(FXMLLoader.load(sceneResourcePrefix.resolve(sceneEntryResourceName).toUri().toURL()), primaryStageWidth, primaryStageHeight), null));
+                    loader.setLocation(sceneResourcePrefixPath.resolve(sceneEntryResourceName).toUri().toURL());
+
+                    controllerTable.put(sceneEntry, new SceneMap(new Scene(loader.load(), primaryStageWidth, primaryStageHeight), null));
                     logger.log(Level.INFO, "Scene added: " + sceneEntry + ": **/" + sceneEntryResourceName);
-                    
+
                     continue;
                 }
 
@@ -210,24 +216,25 @@ public final class StageController {
 
                     controllerInstance = getInstanceMethod.invoke(null);
 
-                    loader = new FXMLLoader(sceneResourcePrefix.resolve(sceneEntryResourceName).toUri().toURL());
+                    loader.setLocation(sceneResourcePrefixPath.resolve(sceneEntryResourceName).toUri().toURL());
                     loader.setController(controllerInstance);
                     scene = new Scene(loader.load(), primaryStageWidth, primaryStageHeight);
 
                     controllerTable.put(sceneEntry, new SceneMap(scene, controllerClass));
                     logger.log(Level.INFO, "Scene added: " + sceneEntry + ": **/" + sceneEntryResourceName + " => " + controllerClassName);
 
-                    sceneEntryResourceName = null;
-                    controllerClassName = null;
-                    controllerClass = null;
-                    getInstanceMethod = null;
-                    controllerInstance = null;
+                    // sceneEntryResourceName = null;
+                    // controllerClassName = null;
+                    // controllerClass = null;
+                    // getInstanceMethod = null;
+                    // controllerInstance = null;
 
-                    loader = null;
-                    scene = null;
+                    // loader = null;
+                    // scene = null;
                 }
             }
         } catch (IOException e) {
+            e.printStackTrace();
             logger.log(Level.SEVERE, "Got 'IOException' while loading FXML resource: " + e.getMessage());
         } catch (ClassNotFoundException e) {
             logger.log(Level.SEVERE, "Controller class found: " + e.getMessage());
@@ -248,7 +255,7 @@ public final class StageController {
         }
     }
 
-    public void dispatch(String pathStringToResourceIndexFile,
+    public void dispatch(String sceneResourceIndexPathString,
                          String sceneResourcePrefixPathString,
                          Object mainApp,
                          Stage primaryStage,
@@ -256,15 +263,15 @@ public final class StageController {
                          double primaryStageWidth,
                          double primaryStageHeight) {
 
-        Objects.nonNull(pathStringToResourceIndexFile);
+        Objects.nonNull(sceneResourceIndexPathString);
 
-        if (Files.exists(Paths.get(pathStringToResourceIndexFile)) == false) {
+        if (Files.exists(Paths.get(sceneResourceIndexPathString)) == false) {
             logger.log(Level.SEVERE, "FXML index file not found");
 
             System.exit(1);
         }
 
-        dispatch(Paths.get(pathStringToResourceIndexFile),
+        dispatch(Paths.get(sceneResourceIndexPathString),
                  Paths.get(sceneResourcePrefixPathString),
                  mainApp,
                  primaryStage,
@@ -276,19 +283,19 @@ public final class StageController {
     private boolean defineHomeSceneFromIndexFile() {
         String defaultSceneProperty = new String();
 
-        try (BufferedReader in = Files.newBufferedReader(sceneResourcePath, StandardCharsets.UTF_8)) {
+        try (BufferedReader in = Files.newBufferedReader(sceneResourceIndexPath, StandardCharsets.UTF_8)) {
 
             if (in.ready()) {
                 defaultSceneProperty = in.readLine();
             }
 
-            homeSceneEntry = Optional.ofNullable(defaultSceneProperty.split("=")[0])
-                                     .filter(s -> controllerTable.containsKey(s))
-                                     .get();
+                homeSceneEntry = Optional.ofNullable(defaultSceneProperty.split("\\=")[0])
+                                         .filter(s -> controllerTable.containsKey(s))
+                                         .get();
 
-            logger.log(Level.INFO, "Defined home scene to '" + this.homeSceneEntry + "'");
+                logger.log(Level.INFO, "Defined home scene to '" + homeSceneEntry + "'");
 
-            return true;
+                return true;
         } catch (IOException e) {
             logger.log(Level.SEVERE, "Got IOException while trying to define home scene from FXML index file");
 
@@ -304,7 +311,7 @@ public final class StageController {
         if (controllerTable.containsKey(sceneEntry)) {
             this.homeSceneEntry = sceneEntry;
 
-            logger.log(Level.INFO, "Define home scene to '" + this.homeSceneEntry + "'");
+            logger.log(Level.INFO, "Defined home scene to '" + this.homeSceneEntry + "'");
             return true;
         }
 
@@ -334,7 +341,7 @@ public final class StageController {
     public void addScene(String sceneEntry,
                          String scenePathString) {
 
-        Path scenePath = ResourcePrefix.getPrefix().resolve("fxml").resolve(scenePathString);
+        Path scenePath = sceneResourcePrefixPath.resolve(scenePathString);
 
         if (Files.exists(scenePath)
             && Files.isRegularFile(scenePath)) {
@@ -353,6 +360,8 @@ public final class StageController {
             Scene scene;
 
             try (InputStream in = Files.newInputStream(scenePath)) {
+
+                loader = new FXMLLoader();
 
                 // builder = builders.newDocumentBuilder();
                 // doc = builder.parse(in);
@@ -384,13 +393,13 @@ public final class StageController {
 
                 controllerInstance = getInstanceMethod.invoke(null);
 
-                loader = new FXMLLoader(scenePath.toUri().toURL());
+                loader.setLocation(scenePath.toUri().toURL());
                 loader.setController(controllerInstance);
 
                 scene = new Scene(loader.load(), primaryStageWidth, primaryStageHeight);
                 controllerTable.put(sceneEntry, new SceneMap(scene, controllerClass));
 
-                logger.log(Level.INFO, "Scene added: " + sceneEntry + ": */" + scenePathString);
+                logger.log(Level.INFO, "Scene added: " + sceneEntry + ": **/" + scenePathString);
             } catch (IOException e) {
                 logger.log(Level.SEVERE, "Got 'IOException' while loading FXML resource: " + e.getMessage());
             // }  catch (ParserConfigurationException e) {

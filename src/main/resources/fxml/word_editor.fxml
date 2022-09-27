@@ -12,7 +12,7 @@
 <?import javafx.scene.shape.Rectangle?>
 <?import javafx.scene.text.Font?>
 
-<Pane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="600.0" prefWidth="800.0" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1">
+<Pane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="600.0" prefWidth="800.0" xmlns="http://javafx.com/javafx/18" xmlns:fx="http://javafx.com/fxml/1">
    <children>
       <Rectangle fx:id="newWordLiteralAccent" arcHeight="5.0" arcWidth="5.0" fill="#dadada" height="45.0" layoutY="115.0" stroke="TRANSPARENT" strokeType="INSIDE" width="800.0" />
       <Label layoutX="306.0" layoutY="44.0" prefHeight="35.0" prefWidth="197.0" text="Add New Word">
@@ -111,7 +111,7 @@
       <Group fx:id="addNewWordResultBanner" layoutX="52.0">
          <children>
             <Rectangle fx:id="addNewWordResultBannerFill" arcHeight="5.0" arcWidth="5.0" fill="#16e454" height="30.0" stroke="TRANSPARENT" strokeType="INSIDE" width="696.0" />
-            <Label fx:id="addNewWordResultLabel" layoutX="276.0" layoutY="7.0" text="Word 'newWord' added!" textFill="WHITE">
+            <Label fx:id="addNewWordResultLabel" alignment="CENTER" layoutY="6.0" prefHeight="18.0" prefWidth="696.0" text="Word 'newWord' added!" textAlignment="CENTER" textFill="WHITE">
                <font>
                   <Font name="Noto Sans Display SemiBold" size="13.0" />
                </font>

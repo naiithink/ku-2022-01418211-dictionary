@@ -134,17 +134,22 @@ public final class WordEditorController {
     }
 
     private void initialView() {
+        resetVisualCue();
         newWordClassChoiceBox.valueProperty().set(Hotspot.UI.PlaceHolder.WORD_CLASS_CHOICE_BOX_GUIDE);
-        addNewWordResultBanner.setVisible(false);
         newWordLiteralTextField.clear();
-        newWordLiteralAccent.setStroke(Color.TRANSPARENT);
         newWordDefinitionTextArea.clear();
         exampleSentencesListView.getItems().clear();
         newExampleSentenceTextField.clear();
-        removeSelectedExampleSentenceButton.setVisible(false);
-        exampleSentenceInfoLabel.setVisible(false);
-        exampleSentenceInfoLabel.setText("exampleSentenceInfoLabel");
         newWordLiteralTextField.requestFocus();
+    }
+
+    private void resetVisualCue() {
+        newWordLiteralAccent.setStroke(Color.TRANSPARENT);
+        addNewWordResultBanner.setVisible(false);
+        addNewWordResultLabel.setText(null);
+        exampleSentenceInfoLabel.setVisible(false);
+        exampleSentenceInfoLabel.setText(null);
+        removeSelectedExampleSentenceButton.setVisible(false);
     }
 
     @FXML
@@ -168,22 +173,62 @@ public final class WordEditorController {
         performAddNewWord();
     }
 
+    private void showAddWordBanner(Color bannerBackgroundColor,
+                                   Duration duration,
+                                   String bannerText) {
+
+        if (bannerBackgroundColor == null
+            || bannerText == null) {
+
+            return;
+        }
+
+        addNewWordResultLabel.setText(bannerText);
+        addNewWordResultBannerFill.setFill(bannerBackgroundColor);
+        addNewWordResultBanner.setVisible(true);
+
+        if (duration == null) {
+            return;
+        }
+
+        PauseTransition addedWord = new PauseTransition(duration);
+
+        addedWord.setOnFinished(e -> addNewWordResultBanner.setVisible(false));
+        addedWord.play();
+    }
+
     private void performAddNewWord() {
+        resetVisualCue();
+
         String wordLiteralString = newWordLiteralTextField.getText().toLowerCase();
 
         if (newWordClassChoiceBox.getValue() == Hotspot.UI.PlaceHolder.WORD_CLASS_CHOICE_BOX_GUIDE) {
-            addNewWordResultLabel.setText("Word class must be selected");
-            addNewWordResultBannerFill.setFill(Color.valueOf(Hotspot.UI.Color.YELLOW.getValue()));
+            showAddWordBanner(Color.valueOf(Hotspot.UI.Color.YELLOW.getValue()),
+                                            null,
+                                            "Word class must be selected");
+
             newWordLiteralAccent.setStroke(Color.valueOf(Hotspot.UI.Color.YELLOW.getValue()));
-            addNewWordResultBanner.setVisible(true);
+
             return;
+        }
+
+        List<String> exampleSentencesInList = exampleSentencesListView.getItems();
+
+        for (String s : exampleSentencesInList) {
+            if (s.contains(wordLiteralString) == false) {
+                showAddWordBanner(Color.valueOf(Hotspot.UI.Color.RED.getValue()),
+                                                null,
+                                                "Word changed. Remove unrelated example sentences from the list.");
+
+                return;
+            }
         }
 
         WordClass wordClass = Enum.valueOf(WordClass.class, newWordClassChoiceBox.getValue().toUpperCase());
         String wordDefinitionString = newWordDefinitionTextArea.getText();
 
         List<String> wordExampleSentences = new CopyOnWriteArrayList<>();
-        
+
         for (String s : exampleSentencesListView.getItems()) {
             wordExampleSentences.add(s);
         }
@@ -198,37 +243,34 @@ public final class WordEditorController {
 
         initialView();
 
-        addNewWordResultLabel.setText("Word '" + wordLiteralString + "' added!");
-        addNewWordResultBannerFill.setFill(Color.valueOf(Hotspot.UI.Color.GREEN.getValue()));
-
-        addNewWordResultBanner.setVisible(true);
-
-        PauseTransition addedWord = new PauseTransition(Duration.seconds(Hotspot.UI.AnimationDuration.STATUS_BANNER_DURATION.getValue()));
-
-        addedWord.setOnFinished(e -> addNewWordResultBanner.setVisible(false));
-        addedWord.play();
+        showAddWordBanner(Color.valueOf(Hotspot.UI.Color.GREEN.getValue()),
+                                        Duration.seconds(Hotspot.UI.AnimationDuration.STATUS_BANNER_DURATION.getValue()),
+                                        "Word '" + wordLiteralString + "' added!");
     }
 
     private void performAddExampleSentence() {
-        String newExampleSentence = newExampleSentenceTextField.getText();
-        String newExampleSentenceCaps = newExampleSentenceTextField.getText().toUpperCase();
+        resetVisualCue();
 
-        newWordLiteralAccent.setStroke(Color.TRANSPARENT);
+        String newExampleSentence = newExampleSentenceTextField.getText().trim();
+        String newExampleSentenceCaps = newExampleSentenceTextField.getText().trim().toUpperCase();
 
         if (newWordLiteralTextField.getText().isEmpty()) {
             exampleSentenceInfoLabel.setText("Please enter some word before adding examples");
             exampleSentenceInfoLabel.setVisible(true);
             newWordLiteralAccent.setStroke(Color.valueOf(Hotspot.UI.Color.RED.getValue()));
             return;
-        } else if (newExampleSentenceCaps.contains(newWordLiteralTextField.getText().toUpperCase()) == false) {
+        } else if (newExampleSentenceCaps.contains(newWordLiteralTextField.getText().trim().toUpperCase()) == false) {
             exampleSentenceInfoLabel.setText("Sentence must contain the adding word");
             exampleSentenceInfoLabel.setVisible(true);
             newWordLiteralAccent.setStroke(Color.valueOf(Hotspot.UI.Color.YELLOW.getValue()));
             return;
-        } else if (exampleSentencesListView.getItems().contains(newExampleSentence)) {
+        } else if (exampleSentencesListView.getItems().contains(newExampleSentence.trim())) {
             exampleSentenceInfoLabel.setText("Sentence already in the list");
             exampleSentenceInfoLabel.setVisible(true);
             return;
+        } else if (newWordDefinitionTextArea.getText().isBlank()) {
+            exampleSentenceInfoLabel.setText("Word definition must be defined");
+            exampleSentenceInfoLabel.setVisible(true);
         }
 
         exampleSentenceInfoLabel.setVisible(false);
@@ -237,6 +279,8 @@ public final class WordEditorController {
     }
 
     private void performRemoveSelectedExampleSentence() {
+        resetVisualCue();
+
         exampleSentencesListView.refresh();
         removeSelectedExampleSentence();
 
@@ -251,7 +295,6 @@ public final class WordEditorController {
         exampleSentencesListView.getItems().remove(exampleSentenceToRemove);
         exampleSentencesListView.refresh();
         exampleSentenceInfoLabel.setVisible(false);
-        exampleSentenceToRemove = null;
 
         if (exampleSentencesListView.getItems().isEmpty()) {
             removeSelectedExampleSentenceButton.setVisible(false);

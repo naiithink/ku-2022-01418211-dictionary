@@ -1,10 +1,10 @@
 package com.github.naiithink.app.models;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -61,7 +61,7 @@ public final class WordDictionary {
 
         if (Hotspot.isAppInitialized) {
             EventController.publish(Hotspot.EventType.RECORD_CHANGED, null);
-            logger.log(Level.INFO, "Added word, published RECORD_CHANGED to listeners");
+            logger.log(Level.INFO, "Added word, published RECORD_CHANGED to Seteners");
         }
     }
 
@@ -84,7 +84,7 @@ public final class WordDictionary {
 
         if (Hotspot.isAppInitialized) {
             EventController.publish(Hotspot.EventType.RECORD_CHANGED, null);
-            logger.log(Level.INFO, "Deleted word, published RECORD_CHANGED to listeners");
+            logger.log(Level.INFO, "Deleted word, published RECORD_CHANGED to Seteners");
         }
     }
 
@@ -96,12 +96,12 @@ public final class WordDictionary {
         return wordTable.get(wordEntry);
     }
 
-    public List<String> getAllWordEntries() {
-        return new ArrayList<String>(wordTable.keySet());
+    public Set<String> getAllWordEntries() {
+        return new ConcurrentSkipListSet<>(wordTable.keySet());
     }
 
-    public List<Word> getAllWords() {
-        List<Word> allWords = new CopyOnWriteArrayList<>();
+    public Set<Word> getAllWords() {
+        Set<Word> allWords = new CopyOnWriteArraySet<>();
 
         for (Word word : wordTable.values()) {
             allWords.add(word);
