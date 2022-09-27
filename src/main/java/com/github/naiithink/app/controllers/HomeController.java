@@ -340,20 +340,20 @@ public final class HomeController
             updateAllWordsListView(filteredAllWordEntries);
         } else {
             for (Word word : filteredAllWordSet) {
-                if (word.getWordLiteral().contains(searchToken.get())) {
+                if (word.getWordLiteral().toLowerCase().contains(searchToken.get().toLowerCase())) {
                     searchResultWordEntrySet.add(word.getWordLiteral());
                 }
             }
 
             for (Word word : filteredAllWordSet) {
-                if (word.getExampleInSentences().contains(searchToken.get())) {
+                if (word.getWordDefinition().toLowerCase().contains(searchToken.get().toLowerCase())) {
                     searchResultWordEntrySet.add(word.getWordLiteral());
                 }
             }
 
             for (Word word : filteredAllWordSet) {
                 for (String sentence : word.getExampleInSentences()) {
-                    if (sentence.contains(searchToken.get())) {
+                    if (sentence.toLowerCase().contains(searchToken.get().toLowerCase())) {
                         searchResultWordEntrySet.add(word.getWordLiteral());
                     }
                 }
