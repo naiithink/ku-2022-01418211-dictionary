@@ -290,7 +290,7 @@ public final class HomeController
                 return data;
             }
 
-            Set<Word> result = new ConcurrentSkipListSet<>();
+            Set<Word> result = new CopyOnWriteArraySet<>();
 
             for (Word word : data) {
                 if (filter.get().equals(word.getWordClass())) {
