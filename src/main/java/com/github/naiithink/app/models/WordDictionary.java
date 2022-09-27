@@ -84,7 +84,7 @@ public final class WordDictionary {
 
         if (Hotspot.isAppInitialized) {
             EventController.publish(Hotspot.EventType.RECORD_CHANGED, null);
-            logger.log(Level.INFO, "Deleted word, published RECORD_CHANGED to Seteners");
+            logger.log(Level.INFO, "Deleted word, published RECORD_CHANGED to Listeners");
         }
     }
 
