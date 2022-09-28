@@ -43,7 +43,7 @@
       </Group>
       <Group layoutX="63.0" layoutY="86.0">
          <children>
-            <ListView fx:id="allWordsListView" layoutY="108.0" prefHeight="331.0" prefWidth="200.0">
+            <ListView fx:id="allWordsListView" layoutY="104.0" prefHeight="331.0" prefWidth="200.0">
                <cursor>
                   <Cursor fx:constant="HAND" />
                </cursor>
@@ -60,7 +60,7 @@
                         <Font name="Noto Sans Display Condensed Medium" size="13.0" />
                      </font>
                   </TextField>
-                  <Button fx:id="wordSearchButton" layoutX="149.0" mnemonicParsing="false" onAction="#handleWordSearchButton" text="Search">
+                  <Button fx:id="wordSearchButton" layoutX="145.0" mnemonicParsing="false" onAction="#handleWordSearchButton" prefHeight="27.0" prefWidth="54.0" text="Search">
                      <font>
                         <Font name="Noto Sans Display Condensed Medium" size="13.0" />
                      </font>
@@ -70,7 +70,7 @@
                   </Button>
                </children>
             </Group>
-            <Button fx:id="addNewWordButton" layoutX="1.0" layoutY="446.0" mnemonicParsing="false" onAction="#handleAddNewWordButton" prefHeight="26.0" prefWidth="200.0" text="+ Add Word">
+            <Button fx:id="addNewWordButton" layoutY="445.0" mnemonicParsing="false" onAction="#handleAddNewWordButton" prefHeight="26.0" prefWidth="200.0" text="+ Add Word">
                <font>
                   <Font name="Noto Sans Display Condensed Medium" size="13.0" />
                </font>
@@ -78,11 +78,11 @@
                   <Cursor fx:constant="HAND" />
                </cursor>
             </Button>
-            <CheckBox fx:id="showExactSearchMatchCheckBox" layoutY="75.0" mnemonicParsing="false" text="Exact">
+            <CheckBox fx:id="showExactSearchMatchCheckBox" layoutY="71.0" mnemonicParsing="false" text="Exact">
                <font>
                   <Font name="Noto Sans Display Condensed Regular" size="13.0" />
                </font></CheckBox>
-            <ChoiceBox fx:id="wordClassFilterChoiceBox" layoutX="70.0" layoutY="70.0" maxWidth="-Infinity" minWidth="-Infinity" prefHeight="26.0" prefWidth="130.0" />
+            <ChoiceBox fx:id="wordClassFilterChoiceBox" layoutX="70.0" layoutY="67.0" maxWidth="-Infinity" minWidth="-Infinity" prefHeight="26.0" prefWidth="130.0" />
          </children>
       </Group>
       <Group layoutX="298.8349914550781" layoutY="44.0">
