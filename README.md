@@ -105,7 +105,7 @@
     - Observer (events)
     - Singleton
 - Type safety and reflection
-- Improving to make it more universal - [naiithink's StageController](src/main/java/com/github/naiithink/app/controllers/StageController.java)
+- Improving to make it more universal - [naiithink's StageManager](src/main/java/com/github/naiithink/app/services/StageManager.java)
 
 ## Experimental Features in Dev
 
