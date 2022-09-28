@@ -8,15 +8,11 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.github.naiithink.app.controllers.StageController.NaiiThinkGetStageControllerInstance;
-import com.github.naiithink.app.controllers.StageController.NaiiThinkStageController;
+import com.github.naiithink.app.controllers.StageManager.NaiiThinkStageManager;
+import com.github.naiithink.app.controllers.StageManager.SceneNotFoundException;
 import com.github.naiithink.app.hotspot.Hotspot;
 import com.github.naiithink.app.models.Word;
 import com.github.naiithink.app.models.WordClass;
@@ -47,7 +43,7 @@ import javafx.scene.text.Text;
 import javafx.scene.text.TextAlignment;
 import javafx.scene.text.TextFlow;
 
-@NaiiThinkStageController
+@NaiiThinkStageManager
 public final class HomeController
         implements EventListener {
 
@@ -57,7 +53,7 @@ public final class HomeController
 
     // private static ExecutorService eService;
 
-    private static StageController stageController;
+    private static StageManager stageController;
 
     private static WordDictionary wordDictionary;
 
@@ -179,7 +175,7 @@ public final class HomeController
 
         // eService = Executors.newFixedThreadPool(3);
 
-        stageController = StageController.getInstance();
+        stageController = StageManager.getStageManager();
 
         wordDictionary = WordDictionary.getDictionary();
 
@@ -192,7 +188,7 @@ public final class HomeController
         wordClassFilter = Optional.empty();
     }
 
-    @NaiiThinkGetStageControllerInstance
+    @NaiiThinkStageManager
     public static HomeController getInstance() {
         if (instance == null) {
             synchronized (HomeController.class) {
@@ -281,7 +277,12 @@ public final class HomeController
 
     @FXML
     public void handleAddNewWordButton(ActionEvent event) {
-        stageController.setScene("word_editor");
+        try {
+            stageController.setScene("word_editor");
+        } catch (SceneNotFoundException e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
     }
 
     private void performWordSearch() {

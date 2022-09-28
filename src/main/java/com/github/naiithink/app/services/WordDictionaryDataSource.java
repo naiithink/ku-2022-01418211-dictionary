@@ -110,6 +110,7 @@ public class WordDictionaryDataSource
     @Override
     public List<Word> readData() throws SecurityException,
                                         MalformedDataSourceException {
+
         Objects.nonNull(path);
 
         Function<String, String[]> splitToSentences = s -> s.split(Hotspot.Universal.CSV.END_OF_SENTENCE_SEARCH.getToken());
@@ -127,7 +128,7 @@ public class WordDictionaryDataSource
                 List<String> exampleInSentences = new CopyOnWriteArrayList<>();
 
                 String line = reader.readLine();
-                String[] data = line.split(Hotspot.Universal.CSV.CSV_DELIMITER.getToken() + Hotspot.Universal.CSV.CSV_WITH_QOUTE_ESCAPE.getToken());
+                String[] data = line.split(Hotspot.Universal.CSV.CSV_DELIMITER.getToken() + Hotspot.Universal.CSV.CSV_WITH_QUOTE_ESCAPE.getToken());
 
                 String wordLiteralString = data[0];
                 String wordClassName = data[1];
@@ -193,10 +194,11 @@ public class WordDictionaryDataSource
         wordDefinition = wordDefinition.replaceAll("\n", Hotspot.Universal.CSV.END_OF_SENTENCE_WRITE_REPLACE.getToken());
 
         try (BufferedWriter writer = Files.newBufferedWriter(path, StandardOpenOption.APPEND)) {
+
             writer.write("\"" + word.getWordLiteral()  + "\""
-                    + Hotspot.Universal.CSV.CSV_DELIMITER.getToken() + word.getWordClass().name()
-                    + Hotspot.Universal.CSV.CSV_DELIMITER.getToken() + "\"" + wordDefinition + "\""
-                    + Hotspot.Universal.CSV.CSV_DELIMITER.getToken() + "\""
+                         + Hotspot.Universal.CSV.CSV_DELIMITER.getToken() + word.getWordClass().name()
+                         + Hotspot.Universal.CSV.CSV_DELIMITER.getToken() + "\"" + wordDefinition + "\""
+                         + Hotspot.Universal.CSV.CSV_DELIMITER.getToken() + "\""
             );
 
             for (String s : word.getExampleInSentences()) {

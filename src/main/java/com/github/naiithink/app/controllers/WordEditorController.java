@@ -4,8 +4,8 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Logger;
 
-import com.github.naiithink.app.controllers.StageController.NaiiThinkGetStageControllerInstance;
-import com.github.naiithink.app.controllers.StageController.NaiiThinkStageController;
+import com.github.naiithink.app.controllers.StageManager.NaiiThinkStageManager;
+import com.github.naiithink.app.controllers.StageManager.SceneNotFoundException;
 import com.github.naiithink.app.hotspot.Hotspot;
 import com.github.naiithink.app.models.Word;
 import com.github.naiithink.app.models.WordClass;
@@ -31,7 +31,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.util.Duration;
 
-@NaiiThinkStageController
+@NaiiThinkStageManager
 public final class WordEditorController {
     private WordEditorController() {}
 
@@ -39,7 +39,7 @@ public final class WordEditorController {
 
     private static WordEditorController instance;
 
-    private static StageController stageController;
+    private static StageManager stageController;
 
     private static WordDictionary wordDictionary;
 
@@ -90,12 +90,12 @@ public final class WordEditorController {
 
     static {
         logger = Logger.getLogger(WordEditorController.class.getName());
-        stageController = StageController.getInstance();
+        stageController = StageManager.getStageManager();
         wordDictionary = WordDictionary.getDictionary();
         wordDictionaryDataSource = WordDictionaryDataSourceController.getInstance();
     }
 
-    @NaiiThinkGetStageControllerInstance
+    @NaiiThinkStageManager
     public static WordEditorController getInstance() {
         if (instance == null) {
             synchronized (WordEditorController.class) {
@@ -154,7 +154,13 @@ public final class WordEditorController {
 
     @FXML
     public void handleHomeButton(ActionEvent event) {
-        stageController.setScene("home");
+        try {
+            stageController.setScene("home");
+        } catch (SceneNotFoundException e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
+
         initialView();
     }
 

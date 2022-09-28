@@ -5,8 +5,9 @@ import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.github.naiithink.app.controllers.StageController;
+import com.github.naiithink.app.controllers.StageManager;
 import com.github.naiithink.app.controllers.WordDictionaryDataSourceController;
+import com.github.naiithink.app.controllers.StageManager.SceneNotFoundException;
 import com.github.naiithink.app.helpers.ResourcePrefix;
 import com.github.naiithink.app.hotspot.Hotspot;
 import com.github.naiithink.app.models.Word;
@@ -39,7 +40,7 @@ public final class App extends Application {
     }
 
     private void configStageController(Stage primaryStage) {
-        StageController stageController = StageController.getInstance();
+        StageManager stageController = StageManager.getStageManager();
 
         stageController.dispatch(ResourcePrefix.getPrefix().resolve(Hotspot.Resource.ResourceIndex.getProperty("index.dir.fxml"))
                                                            .resolve(Hotspot.Resource.ResourceIndex.getProperty("index.file.fxml")),
@@ -50,7 +51,12 @@ public final class App extends Application {
                                  Hotspot.UI.STAGE_WIDTH,
                                  Hotspot.UI.STAGE_HEIGHT);
 
-        stageController.activate();
+        try {
+            stageController.defineHomeSceneFromIndexFile();
+            stageController.activate();
+        } catch (SceneNotFoundException e) {
+            e.printStackTrace();
+        }
     }
 
     private void loadDictionaryDataSource() {

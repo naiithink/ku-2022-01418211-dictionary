@@ -71,7 +71,7 @@ public final class Hotspot {
         public enum CSV {
 
             CSV_DELIMITER                       (","),
-            CSV_WITH_QOUTE_ESCAPE               ("(?=(?:[^\"]*\"[^\"]*\")*(?![^\"]*\"))"),
+            CSV_WITH_QUOTE_ESCAPE               ("(?=(?:[^\"]*\"[^\"]*\")*(?![^\"]*\"))"),
             END_OF_SENTENCE_ESCAPE              ("\\\\\\\\033\\\\\\[1E"),
             END_OF_SENTENCE_READ                ("\\\\033\\[1E"),
             END_OF_SENTENCE_WRITE               ("\\033[1E"),
