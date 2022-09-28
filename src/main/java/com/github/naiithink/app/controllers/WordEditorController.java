@@ -4,12 +4,13 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Logger;
 
-import com.github.naiithink.app.controllers.StageManager.NaiiThinkStageManager;
-import com.github.naiithink.app.controllers.StageManager.SceneNotFoundException;
 import com.github.naiithink.app.hotspot.Hotspot;
 import com.github.naiithink.app.models.Word;
 import com.github.naiithink.app.models.WordClass;
 import com.github.naiithink.app.models.WordDictionary;
+import com.github.naiithink.app.services.StageManager;
+import com.github.naiithink.app.services.StageManager.NaiiThinkStageManager;
+import com.github.naiithink.app.services.StageManager.SceneNotFoundException;
 
 import javafx.animation.PauseTransition;
 import javafx.beans.value.ChangeListener;

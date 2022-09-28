@@ -5,13 +5,13 @@ import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.github.naiithink.app.controllers.StageManager;
 import com.github.naiithink.app.controllers.WordDictionaryDataSourceController;
-import com.github.naiithink.app.controllers.StageManager.SceneNotFoundException;
 import com.github.naiithink.app.helpers.ResourcePrefix;
 import com.github.naiithink.app.hotspot.Hotspot;
 import com.github.naiithink.app.models.Word;
 import com.github.naiithink.app.models.WordDictionary;
+import com.github.naiithink.app.services.StageManager;
+import com.github.naiithink.app.services.StageManager.SceneNotFoundException;
 import com.github.naiithink.app.util.resources.MalformedDataSourceException;
 
 import javafx.application.Application;

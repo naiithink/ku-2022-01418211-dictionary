@@ -9,7 +9,7 @@
  * @todo Multi-stage management
  */
 
-package com.github.naiithink.app.controllers;
+package com.github.naiithink.app.services;
 
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
