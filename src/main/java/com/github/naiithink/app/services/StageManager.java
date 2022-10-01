@@ -58,21 +58,29 @@ import javafx.stage.Stage;
  * This class is following the singleton pattern since there must only be one instance
  * of the StageManager that takes control over the primary @link javafx.stage.Stage @unlink
  * provided by the platform.
+ * 
+ * Controller MUST be declared in either FXML resource file or in FXML index property file, not both.
+ * Lines starting with @ref COMMENT_SYMBOL will be ignored.
  */
 public final class StageManager {
 
     /**
-     * If required, controller class to be used must be written in singleton pattern
+     * If required, controller to be used must be written in singleton pattern
      * 
      * Name of the method for getting controller type instance
      */
     private static final String GET_INSTANCE_METHOD_NAME;
 
     /**
-     * Delimiter used to delimit the .fxml resource and its controller class name field in a record
+     * Delimiter used to delimit the .fxml resource and its controller name field in a record
      * read from FXML index property file.
      */
     private static final String INDEX_PROPERTY_TOKEN;
+
+    /**
+     * Lines in FXML index property file begining with this charactor are comments and will be ignored
+     */
+    public static final char COMMENT_SYMBOL;
 
     /**
      * Default width of the Stage
@@ -165,7 +173,7 @@ public final class StageManager {
     public @interface NaiiThinkStageManager {}
 
     /**
-     * The record type for storing a pair of Scene and, if required, its corresponding controller Class
+     * The record type for storing a pair of Scene and, if required, its corresponding controller
      */
     private record SceneMap(Scene scene,
                             Class<?> controllerClass) {}
@@ -192,6 +200,7 @@ public final class StageManager {
 
         public SceneNotFoundException(String sceneEntry,
                                       Throwable cause) {
+
             super(sceneEntry, cause);
         }
 
@@ -204,9 +213,56 @@ public final class StageManager {
         }
     }
 
+    /**
+     * Thrown to indicate that the FXML index property file being read is malformed
+     */
+    public final class MalformedFXMLIndexFileException
+            extends Exception {
+
+        public MalformedFXMLIndexFileException() {}
+
+        public MalformedFXMLIndexFileException(String message) {
+            super(message);
+        }
+
+        public MalformedFXMLIndexFileException(Throwable cause) {
+            super(cause);
+        }
+
+        public MalformedFXMLIndexFileException(String message,
+                                               Throwable cause) {
+
+            super(message, cause);
+        }
+    }
+
+    /**
+     * Thrown to indicate that there is no controller declared for a certain Scene
+     */
+    public final class NoControllerSpecifiedException
+            extends Exception {
+
+        public NoControllerSpecifiedException() {}
+
+        public NoControllerSpecifiedException(String message) {
+            super(message);
+        }
+
+        public NoControllerSpecifiedException(Throwable cause) {
+            super(cause);
+        }
+
+        public NoControllerSpecifiedException(String message,
+                                              Throwable cause) {
+
+            super(message, cause);
+        }
+    }
+
     static {
         GET_INSTANCE_METHOD_NAME = "getInstance";
         INDEX_PROPERTY_TOKEN = "\\=>";
+        COMMENT_SYMBOL = '#';
         DEFAULT_STAGE_WIDTH = 800.0;
         DEFAULT_STAGE_HEIGHT = 600.0;
     }
@@ -249,6 +305,8 @@ public final class StageManager {
      * @param       primaryStageTitle           Title of the primary Stage
      * @param       primaryStageWidth           Width of the primary Stage
      * @param       primaryStageHeight          Height of the primary Stage
+     * 
+     * @throws      MalformedFXMLIndexFileException     when the FXML index property file is malformed
      */
     public void dispatch(Path sceneResourceIndexPath,
                          Path sceneResourcePrefixPath,
@@ -256,7 +314,8 @@ public final class StageManager {
                          Stage primaryStage,
                          String primaryStageTitle,
                          double primaryStageWidth,
-                         double primaryStageHeight) {
+                         double primaryStageHeight) throws MalformedFXMLIndexFileException,
+                                                           NoControllerSpecifiedException {
 
         Objects.nonNull(sceneResourceIndexPath);
         Objects.nonNull(mainApp);
@@ -307,6 +366,7 @@ public final class StageManager {
             for (String sceneEntry : sceneEntries) {
 
                 loader = new FXMLLoader();
+                controllerClassName = new String();
 
                 String[] sceneIndexPropertyFields = resourceIndexProperties.getProperty(sceneEntry).split(INDEX_PROPERTY_TOKEN);
 
@@ -314,73 +374,80 @@ public final class StageManager {
                     || sceneIndexPropertyFields.length > 2) {
 
                     logger.log(Level.SEVERE, "FXML index property '" + sceneEntry + "' has no property value");
+
                     continue;
                 } else if (sceneIndexPropertyFields.length > 2) {
                     logger.log(Level.SEVERE, "Too many property field for '" + sceneEntry + "'");
+
                     continue;
                 }
 
-                sceneEntryResourceName = new String(sceneIndexPropertyFields[0]);
+                sceneEntryResourceName = Optional.ofNullable(sceneIndexPropertyFields[0])
+                                                 .orElseThrow(MalformedFXMLIndexFileException::new);
 
                 if (sceneIndexPropertyFields.length == 1) {
-                    logger.log(Level.WARNING, "FXML index '" + sceneEntry + "' does not have declared controller");
+                    controllerClassName = getRootXMLAttribute(sceneResourcePrefixPath.resolve(sceneEntryResourceName),
+                                                              FXMLLoader.FX_NAMESPACE_PREFIX,
+                                                              FXMLLoader.FX_CONTROLLER_ATTRIBUTE).orElseThrow(NoControllerSpecifiedException::new);
 
-                    loader.setLocation(sceneResourcePrefixPath.resolve(sceneEntryResourceName).toUri().toURL());
+                    logger.log(Level.INFO, "Using controller declared in FXML resource file: " + sceneEntryResourceName + " for Scene entry: '" + sceneEntry + "'");
 
-                    sceneTable.put(sceneEntry, new SceneMap(new Scene(loader.load(), primaryStageWidth, primaryStageHeight), null));
-                    logger.log(Level.INFO, "Scene added: " + sceneEntry + ": **/" + sceneEntryResourceName);
+                    sceneTable.put(sceneEntry, new SceneMap(new Scene(FXMLLoader.load(sceneResourcePrefixPath.resolve(sceneIndexPropertyFields[0]).toUri().toURL())), null));
+                    logger.log(Level.INFO, "Scene added: " + sceneEntry + ": **/" + sceneEntryResourceName + " -> " + controllerClassName); 
 
                     continue;
+                } else {
+                    controllerClassName = Optional.ofNullable(sceneIndexPropertyFields[1])
+                                                  .orElseThrow(MalformedFXMLIndexFileException::new);
+
+                    logger.log(Level.INFO, "Using controller declared in FXML index property file: " + sceneResourceIndexPath.getFileName().toString() + " for Scene entry: '" + sceneEntry + "'");
                 }
 
-                if (sceneIndexPropertyFields.length == 2) {
-                    controllerClassName = new String(sceneIndexPropertyFields[1]);
-                    controllerClass = Class.forName(controllerClassName);
+                controllerClass = Class.forName(controllerClassName);
 
-                    if (controllerClass.isAnnotationPresent(StageManager.NaiiThinkStageManager.class) == false) {
-                        /**
-                         * @danger DO NOT pass any message read from file to any string formatter
-                         */
-                        String cannotValidateDeclaredControllerMessage = "Singleton controller: cannot check if the controller class of file '" + sceneEntryResourceName + "' with declared controller name '" + controllerClassName + "' is valid.\n"
-                                                                         + "FXML controller MUST be annotated with '@" + StageManager.NaiiThinkStageManager.class.getCanonicalName() + "' interface and define a static method '" + GET_INSTANCE_METHOD_NAME + "' with an annotation '@" + StageManager.NaiiThinkStageManager.class.getCanonicalName() + "' which returns the singleton instance of the controller class itself";
+                if (controllerClass.isAnnotationPresent(StageManager.NaiiThinkStageManager.class) == false) {
+                    /**
+                     * @danger DO NOT pass any message read from file to any string formatter
+                     */
+                    String cannotValidateDeclaredControllerMessage = "Singleton controller: cannot check if the controller of file '" + sceneEntryResourceName + "' with declared controller name '" + controllerClassName + "' is valid.\n"
+                                                                     + "FXML controller MUST be annotated with '@" + StageManager.NaiiThinkStageManager.class.getCanonicalName() + "' interface and define a static method '" + GET_INSTANCE_METHOD_NAME + "' with an annotation '@" + StageManager.NaiiThinkStageManager.class.getCanonicalName() + "' which returns the singleton instance of the controller itself";
 
-                        logger.log(Level.SEVERE, cannotValidateDeclaredControllerMessage);
+                    logger.log(Level.SEVERE, cannotValidateDeclaredControllerMessage);
 
-                        System.exit(1);
-                    }
-
-                    getInstanceMethod = controllerClass.getMethod(GET_INSTANCE_METHOD_NAME);
-
-                    if (getInstanceMethod.isAnnotationPresent(StageManager.NaiiThinkStageManager.class) == false) {
-                        logger.log(Level.SEVERE, "Cannot find a valid static annotated method '" + GET_INSTANCE_METHOD_NAME + "'");
-
-                        System.exit(1);
-                    }
-
-                    controllerInstance = getInstanceMethod.invoke(null);
-
-                    loader.setLocation(sceneResourcePrefixPath.resolve(sceneEntryResourceName).toUri().toURL());
-                    loader.setController(controllerInstance);
-                    scene = new Scene(loader.load(), primaryStageWidth, primaryStageHeight);
-
-                    sceneTable.put(sceneEntry, new SceneMap(scene, controllerClass));
-                    logger.log(Level.INFO, "Scene added: " + sceneEntry + ": **/" + sceneEntryResourceName + " => " + controllerClassName);
-
-                    // sceneEntryResourceName = null;
-                    // controllerClassName = null;
-                    // controllerClass = null;
-                    // getInstanceMethod = null;
-                    // controllerInstance = null;
-
-                    // loader = null;
-                    // scene = null;
+                    System.exit(1);
                 }
+
+                getInstanceMethod = controllerClass.getMethod(GET_INSTANCE_METHOD_NAME);
+
+                if (getInstanceMethod.isAnnotationPresent(StageManager.NaiiThinkStageManager.class) == false) {
+                    logger.log(Level.SEVERE, "Cannot find a valid static annotated method '" + GET_INSTANCE_METHOD_NAME + "'");
+
+                    System.exit(1);
+                }
+
+                controllerInstance = getInstanceMethod.invoke(null);
+
+                loader.setLocation(sceneResourcePrefixPath.resolve(sceneEntryResourceName).toUri().toURL());
+                loader.setController(controllerInstance);
+                scene = new Scene(loader.load(), primaryStageWidth, primaryStageHeight);
+
+                sceneTable.put(sceneEntry, new SceneMap(scene, controllerClass));
+                logger.log(Level.INFO, "Scene added: " + sceneEntry + ": **/" + sceneEntryResourceName + " => " + controllerClassName);
+
+                // sceneEntryResourceName = null;
+                // controllerClassName = null;
+                // controllerClass = null;
+                // getInstanceMethod = null;
+                // controllerInstance = null;
+
+                // loader = null;
+                // scene = null;
             }
         } catch (IOException e) {
             e.printStackTrace();
             logger.log(Level.SEVERE, "Got 'IOException' while loading FXML resource: " + e.getMessage());
         } catch (ClassNotFoundException e) {
-            logger.log(Level.SEVERE, "Controller class found: " + e.getMessage());
+            logger.log(Level.SEVERE, "Controller not found: " + e.getMessage());
         } catch (NoSuchMethodException e) {
             logger.log(Level.SEVERE, "Method '" + GET_INSTANCE_METHOD_NAME + "' not found");
         } catch (IllegalAccessException e) {
@@ -394,7 +461,7 @@ public final class StageManager {
             /**
              * InvocationTargetException is a checked exception that wraps an exception thrown by an invoked method or constructor.
              */
-            logger.log(Level.SEVERE, "Got an exception while getting instance of controller class");
+            logger.log(Level.SEVERE, "Got an exception while getting instance of controller");
         }
     }
 
@@ -408,6 +475,8 @@ public final class StageManager {
      * @param       primaryStageTitle                   Title of the primary Stage
      * @param       primaryStageWidth                   Width of the primary Stage
      * @param       primaryStageHeight                  Height of the primary Stage
+     * 
+     * @throws      MalformedFXMLIndexFileException     when the FXML index property file is malformed
      */
     public void dispatch(String sceneResourceIndexPathString,
                          String sceneResourcePrefixPathString,
@@ -415,7 +484,8 @@ public final class StageManager {
                          Stage primaryStage,
                          String primaryStageTitle,
                          double primaryStageWidth,
-                         double primaryStageHeight) {
+                         double primaryStageHeight) throws MalformedFXMLIndexFileException,
+                                                           NoControllerSpecifiedException {
 
         Objects.nonNull(sceneResourceIndexPathString);
 
@@ -435,33 +505,71 @@ public final class StageManager {
     }
 
     /**
+     * Gets XML attribute in the root node
+     * 
+     * @param       xmlDocumentPath     Path to XML file
+     * @param       nsPrefix            Attribute prefix
+     * @param       attribute           Attribute name
+     * 
+     * @return  An Optional object containing value of the given attribute
+     */
+    private Optional<String> getRootXMLAttribute(Path xmlDocumentPath,
+                                                 String nsPrefix,
+                                                 String attribute) {
+
+        Optional<String> result = Optional.empty();
+
+        try (InputStream in = Files.newInputStream(xmlDocumentPath)) {
+
+            DocumentBuilderFactory builders = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = builders.newDocumentBuilder();
+            Document doc = builder.parse(in);
+            Element xmlRoot = doc.getDocumentElement();
+
+            result = Optional.ofNullable(xmlRoot.getAttributeNode(nsPrefix + ':' + attribute).getNodeValue());
+        } catch (IOException e) {
+            logger.log(Level.SEVERE, "Got 'IOException' while reading FXML file: " + e.getMessage());
+        } catch (ParserConfigurationException e) {
+            e.printStackTrace();
+        } catch (SAXException e) {
+            e.printStackTrace();
+        }
+
+        return result;
+    }
+
+    /**
      * Defines Scene entry of the primary Scene to the first record in FXML index property file
      * 
-     * @see homeSceneEntry
-     * 
      * @throws      SceneNotFoundException       when the first record in FXML index property file define a Scene that is not in the Scene table
+     * 
+     * @see homeSceneEntry
      */
     public void defineHomeSceneFromIndexFile() throws SceneNotFoundException {
         String defaultSceneProperty = new String();
 
         try (BufferedReader in = Files.newBufferedReader(sceneResourceIndexPath, StandardCharsets.UTF_8)) {
 
-            if (in.ready()) {
+            while (in.ready()) {
                 defaultSceneProperty = in.readLine();
+
+                if ((defaultSceneProperty.charAt(0) == COMMENT_SYMBOL) == false) {
+                    break;
+                }
             }
 
                 homeSceneEntry = Optional.ofNullable(defaultSceneProperty.split("\\=")[0])
                                          .filter(s -> sceneTable.containsKey(s))
                                          .get();
 
-                logger.log(Level.INFO, "Defined home scene to '" + homeSceneEntry + "'");
+                logger.log(Level.INFO, "Defined home Scene to '" + homeSceneEntry + "'");
 
                 return;
         } catch (NoSuchElementException e) {
-            logger.log(Level.SEVERE, "Trying to define unrecognizable home scene entry");
+            logger.log(Level.SEVERE, "Trying to define unrecognizable home Scene entry");
             throw new SceneNotFoundException(defaultSceneProperty);
         } catch (IOException e) {
-            logger.log(Level.SEVERE, "Got IOException while trying to define home scene from FXML index file");
+            logger.log(Level.SEVERE, "Got IOException while trying to define home Scene from FXML index file");
             throw new SceneNotFoundException(defaultSceneProperty, e);
         }
     }
@@ -479,11 +587,11 @@ public final class StageManager {
         if (sceneTable.containsKey(sceneEntry)) {
             this.homeSceneEntry = sceneEntry;
 
-            logger.log(Level.INFO, "Defined home scene to '" + this.homeSceneEntry + "'");
+            logger.log(Level.INFO, "Defined home Scene to '" + this.homeSceneEntry + "'");
             return true;
         }
 
-        logger.log(Level.SEVERE, "Trying to define unrecognizable home scene entry");
+        logger.log(Level.SEVERE, "Trying to define unrecognizable home Scene entry");
         throw new SceneNotFoundException(sceneEntry);
     }
 
@@ -500,17 +608,18 @@ public final class StageManager {
     public void addScene(String sceneEntry,
                          String scenePathString) throws FileNotFoundException {
 
+        if (sceneTable.containsKey(sceneEntry)) {
+            logger.log(Level.SEVERE, "Scene entry already exist: " + sceneEntry);
+
+            return;
+        }
+
         Path scenePath = sceneResourcePrefixPath.resolve(scenePathString);
 
         if (Files.exists(scenePath)
             && Files.isRegularFile(scenePath)) {
 
-            DocumentBuilderFactory builders = DocumentBuilderFactory.newInstance();
-            DocumentBuilder builder;
-            Document doc;
-            Element fxmlRoot;
-
-            String controllerClassName = new String();
+            String controllerClassName;
             Class<?> controllerClass;
             Method getInstanceMethod;
             Object controllerInstance;
@@ -518,15 +627,13 @@ public final class StageManager {
             FXMLLoader loader;
             Scene scene;
 
-            try (InputStream in = Files.newInputStream(scenePath)) {
-
+            try {
+                controllerClassName = new String();
                 loader = new FXMLLoader();
 
-                builder = builders.newDocumentBuilder();
-                doc = builder.parse(in);
-                fxmlRoot = doc.getDocumentElement();
-
-                controllerClassName = fxmlRoot.getAttribute(FXMLLoader.FX_CONTROLLER_ATTRIBUTE);
+                controllerClassName = getRootXMLAttribute(scenePath,
+                                                         FXMLLoader.FX_NAMESPACE_PREFIX,
+                                                         FXMLLoader.FX_CONTROLLER_ATTRIBUTE).get();
 
                 controllerClass = Class.forName(controllerClassName);
 
@@ -534,8 +641,8 @@ public final class StageManager {
                     /**
                      * @danger DO NOT pass any message read from file to any string formatter
                      */
-                    String cannotValidateDeclaredControllerMessage = "Singleton controller: cannot check if the controller class of file '" + scenePathString + "' with declared controller name '" + controllerClassName + "' is valid.\n"
-                                                                     + "FXML controller MUST be annotated with '@" + StageManager.NaiiThinkStageManager.class.getCanonicalName() + "' interface and define a static method '" + GET_INSTANCE_METHOD_NAME + "' with an annotation '@" + StageManager.NaiiThinkStageManager.class.getCanonicalName() + "' which returns the singleton instance of the controller class itself";
+                    String cannotValidateDeclaredControllerMessage = "Singleton controller: cannot check if the controller of file '" + scenePathString + "' with declared controller name '" + controllerClassName + "' is valid.\n"
+                                                                     + "FXML controller MUST be annotated with '@" + StageManager.NaiiThinkStageManager.class.getCanonicalName() + "' interface and define a static method '" + GET_INSTANCE_METHOD_NAME + "' with an annotation '@" + StageManager.NaiiThinkStageManager.class.getCanonicalName() + "' which returns the singleton instance of the controller itself";
 
                     logger.log(Level.SEVERE, cannotValidateDeclaredControllerMessage);
 
@@ -561,12 +668,8 @@ public final class StageManager {
                 logger.log(Level.INFO, "Scene added: " + sceneEntry + ": **/" + scenePathString);
             } catch (IOException e) {
                 logger.log(Level.SEVERE, "Got 'IOException' while loading FXML resource: " + e.getMessage());
-            }  catch (ParserConfigurationException e) {
-                e.printStackTrace();
-            } catch (SAXException e) {
-                e.printStackTrace();
             } catch (ClassNotFoundException e) {
-                logger.log(Level.SEVERE, "Controller class found: " + e.getMessage());
+                logger.log(Level.SEVERE, "Controller not found: " + e.getMessage());
             } catch (NoSuchMethodException e) {
                 logger.log(Level.SEVERE, "Method '" + GET_INSTANCE_METHOD_NAME + "' not found");
             } catch (IllegalAccessException e) {
@@ -580,7 +683,7 @@ public final class StageManager {
                 /**
                  * InvocationTargetException is a checked exception that wraps an exception thrown by an invoked method or constructor.
                  */
-                logger.log(Level.SEVERE, "Got an exception while getting instance of controller class");
+                logger.log(Level.SEVERE, "Got an exception while getting instance of controller");
             }
         } else {
             throw new FileNotFoundException(scenePathString);
@@ -625,9 +728,9 @@ public final class StageManager {
 
         if (sceneTable.containsKey(sceneEntry)) {
             this.primaryStage.setScene(sceneTable.get(sceneEntry).scene);
-            logger.log(Level.INFO, "Current scene has been set to '" + sceneEntry + "'");
+            logger.log(Level.INFO, "Current Scene has been set to '" + sceneEntry + "'");
         } else {
-            logger.log(Level.SEVERE, "Requesting to set unrecognized scene entry '" + sceneEntry + "', current scene will not be changed");
+            logger.log(Level.SEVERE, "Requesting to set unrecognized Scene entry '" + sceneEntry + "', current Scene will not be changed");
         }
     }
 

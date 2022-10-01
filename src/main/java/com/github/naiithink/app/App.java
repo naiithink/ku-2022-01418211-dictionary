@@ -11,6 +11,8 @@ import com.github.naiithink.app.hotspot.Hotspot;
 import com.github.naiithink.app.models.Word;
 import com.github.naiithink.app.models.WordDictionary;
 import com.github.naiithink.app.services.StageManager;
+import com.github.naiithink.app.services.StageManager.MalformedFXMLIndexFileException;
+import com.github.naiithink.app.services.StageManager.NoControllerSpecifiedException;
 import com.github.naiithink.app.services.StageManager.SceneNotFoundException;
 import com.github.naiithink.app.util.resources.MalformedDataSourceException;
 
@@ -29,7 +31,7 @@ public final class App extends Application {
         Hotspot.Resource.ResourceIndex.readResourceIndex();
         loadDictionaryDataSource();
 
-        configStageController(primaryStage);
+        configStageManager(primaryStage);
 
         Hotspot.isAppInitialized = true;
     }
@@ -39,22 +41,27 @@ public final class App extends Application {
         logger.log(Level.INFO, "Logger configuration has been set");
     }
 
-    private void configStageController(Stage primaryStage) {
-        StageManager stageController = StageManager.getStageManager();
-
-        stageController.dispatch(ResourcePrefix.getPrefix().resolve(Hotspot.Resource.ResourceIndex.getProperty("index.dir.fxml"))
-                                                           .resolve(Hotspot.Resource.ResourceIndex.getProperty("index.file.fxml")),
-                                 ResourcePrefix.getPrefix().resolve(Hotspot.Resource.ResourceIndex.getProperty("dir.fxml")),
-                                 this,
-                                 primaryStage,
-                                 Hotspot.UI.APP_TITLE,
-                                 Hotspot.UI.STAGE_WIDTH,
-                                 Hotspot.UI.STAGE_HEIGHT);
+    private void configStageManager(Stage primaryStage) {
+        StageManager stageManager = StageManager.getStageManager();
 
         try {
-            stageController.defineHomeSceneFromIndexFile();
-            stageController.activate();
+            stageManager.dispatch(ResourcePrefix.getPrefix().resolve(Hotspot.Resource.ResourceIndex.getProperty("index.dir.fxml"))
+                                                               .resolve(Hotspot.Resource.ResourceIndex.getProperty("index.file.fxml")),
+                                     ResourcePrefix.getPrefix().resolve(Hotspot.Resource.ResourceIndex.getProperty("dir.fxml")),
+                                     this,
+                                     primaryStage,
+                                     Hotspot.UI.APP_TITLE,
+                                     Hotspot.UI.STAGE_WIDTH,
+                                     Hotspot.UI.STAGE_HEIGHT);
+
+            stageManager.defineHomeSceneFromIndexFile();
+            stageManager.activate();
+        } catch (MalformedFXMLIndexFileException e) {
+            logger.log(Level.SEVERE, "Malformed FXML index file");
+            e.printStackTrace();
         } catch (SceneNotFoundException e) {
+            logger.log(Level.SEVERE, "Scene not found: " + e.getMessage());
+        } catch (NoControllerSpecifiedException e) {
             e.printStackTrace();
         }
     }
