@@ -10,7 +10,7 @@ import com.github.naiithink.app.models.WordClass;
 import com.github.naiithink.app.models.WordDictionary;
 import com.github.naiithink.app.services.StageManager;
 import com.github.naiithink.app.services.StageManager.NaiiThinkStageManager;
-import com.github.naiithink.app.services.StageManager.SceneNotFoundException;
+import com.github.naiithink.app.services.StageManager.PageNotFoundException;
 
 import javafx.animation.PauseTransition;
 import javafx.beans.value.ChangeListener;
@@ -156,8 +156,8 @@ public final class WordEditorController {
     @FXML
     public void handleHomeButton(ActionEvent event) {
         try {
-            stageController.setScene("home");
-        } catch (SceneNotFoundException e) {
+            stageController.setPage("home");
+        } catch (PageNotFoundException e) {
             e.printStackTrace();
             System.exit(1);
         }

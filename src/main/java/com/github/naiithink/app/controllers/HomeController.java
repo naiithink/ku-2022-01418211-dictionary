@@ -17,7 +17,7 @@ import com.github.naiithink.app.models.WordClass;
 import com.github.naiithink.app.models.WordDictionary;
 import com.github.naiithink.app.services.StageManager;
 import com.github.naiithink.app.services.StageManager.NaiiThinkStageManager;
-import com.github.naiithink.app.services.StageManager.SceneNotFoundException;
+import com.github.naiithink.app.services.StageManager.PageNotFoundException;
 import com.github.naiithink.app.util.Filterer;
 import com.github.naiithink.app.util.events.listeners.EventListener;
 
@@ -279,8 +279,8 @@ public final class HomeController
     @FXML
     public void handleAddNewWordButton(ActionEvent event) {
         try {
-            stageController.setScene("word_editor");
-        } catch (SceneNotFoundException e) {
+            stageController.setPage("word_editor");
+        } catch (PageNotFoundException e) {
             e.printStackTrace();
             System.exit(1);
         }

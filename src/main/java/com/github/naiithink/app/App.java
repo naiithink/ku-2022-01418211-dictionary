@@ -13,11 +13,12 @@ import com.github.naiithink.app.models.WordDictionary;
 import com.github.naiithink.app.services.StageManager;
 import com.github.naiithink.app.services.StageManager.MalformedFXMLIndexFileException;
 import com.github.naiithink.app.services.StageManager.NoControllerSpecifiedException;
-import com.github.naiithink.app.services.StageManager.SceneNotFoundException;
+import com.github.naiithink.app.services.StageManager.PageNotFoundException;
 import com.github.naiithink.app.util.resources.MalformedDataSourceException;
 
 import javafx.application.Application;
 import javafx.stage.Stage;
+import javafx.stage.StageStyle;
 
 // @MainAppObject
 public final class App extends Application {
@@ -45,22 +46,23 @@ public final class App extends Application {
         StageManager stageManager = StageManager.getStageManager();
 
         try {
-            stageManager.dispatch(ResourcePrefix.getPrefix().resolve(Hotspot.Resource.ResourceIndex.getProperty("index.dir.fxml"))
-                                                               .resolve(Hotspot.Resource.ResourceIndex.getProperty("index.file.fxml")),
-                                     ResourcePrefix.getPrefix().resolve(Hotspot.Resource.ResourceIndex.getProperty("dir.fxml")),
-                                     this,
-                                     primaryStage,
-                                     Hotspot.UI.APP_TITLE,
-                                     Hotspot.UI.STAGE_WIDTH,
-                                     Hotspot.UI.STAGE_HEIGHT);
+            stageManager.bindStage(ResourcePrefix.getPrefix().resolve(Hotspot.Resource.ResourceIndex.getProperty("index.dir.fxml"))
+                                                             .resolve(Hotspot.Resource.ResourceIndex.getProperty("index.file.fxml")),
+                                   ResourcePrefix.getPrefix().resolve(Hotspot.Resource.ResourceIndex.getProperty("dir.fxml")),
+                                   this,
+                                   primaryStage,
+                                   StageStyle.TRANSPARENT,
+                                   Hotspot.UI.APP_TITLE,
+                                   Hotspot.UI.STAGE_WIDTH,
+                                   Hotspot.UI.STAGE_HEIGHT);
 
-            stageManager.defineHomeSceneFromIndexFile();
+            stageManager.autoDefineHomePage();
             stageManager.activate();
         } catch (MalformedFXMLIndexFileException e) {
             logger.log(Level.SEVERE, "Malformed FXML index file");
             e.printStackTrace();
-        } catch (SceneNotFoundException e) {
-            logger.log(Level.SEVERE, "Scene not found: " + e.getMessage());
+        } catch (PageNotFoundException e) {
+            logger.log(Level.SEVERE, "Page not found: " + e.getMessage());
         } catch (NoControllerSpecifiedException e) {
             e.printStackTrace();
         }
