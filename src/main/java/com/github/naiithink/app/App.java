@@ -51,12 +51,17 @@ public final class App extends Application {
                                    ResourcePrefix.getPrefix().resolve(Hotspot.Resource.ResourceIndex.getProperty("dir.fxml")),
                                    this,
                                    primaryStage,
-                                   false,
+                                   true,
                                    Hotspot.UI.APP_TITLE,
                                    Hotspot.UI.STAGE_WIDTH,
                                    Hotspot.UI.STAGE_HEIGHT);
 
-            stageManager.setStageControlButtonAlignLeft(false);
+            if (System.getProperty("os.name").toLowerCase().contains("mac") == false
+                && System.getProperty("os.name").toLowerCase().contains("darwin") == false) {
+
+                stageManager.setStageControlButtonAlignLeft(false);
+            }
+
             stageManager.autoDefineHomePage();
             stageManager.activate();
         } catch (MalformedFXMLIndexFileException e) {
