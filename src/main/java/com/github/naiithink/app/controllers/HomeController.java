@@ -16,7 +16,7 @@ import com.github.naiithink.app.models.Word;
 import com.github.naiithink.app.models.WordClass;
 import com.github.naiithink.app.models.WordDictionary;
 import com.github.naiithink.app.services.StageManager;
-import com.github.naiithink.app.services.StageManager.NaiiThinkStageManager;
+import com.github.naiithink.app.services.StageManager.TheStageManager;
 import com.github.naiithink.app.services.StageManager.PageNotFoundException;
 import com.github.naiithink.app.util.Filterer;
 import com.github.naiithink.app.util.events.listeners.EventListener;
@@ -44,7 +44,7 @@ import javafx.scene.text.Text;
 import javafx.scene.text.TextAlignment;
 import javafx.scene.text.TextFlow;
 
-@NaiiThinkStageManager
+@TheStageManager
 public final class HomeController
         implements EventListener {
 
@@ -189,7 +189,7 @@ public final class HomeController
         wordClassFilter = Optional.empty();
     }
 
-    @NaiiThinkStageManager
+    @TheStageManager
     public static HomeController getInstance() {
         if (instance == null) {
             synchronized (HomeController.class) {

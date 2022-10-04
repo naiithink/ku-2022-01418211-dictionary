@@ -51,11 +51,12 @@ public final class App extends Application {
                                    ResourcePrefix.getPrefix().resolve(Hotspot.Resource.ResourceIndex.getProperty("dir.fxml")),
                                    this,
                                    primaryStage,
-                                   StageStyle.TRANSPARENT,
+                                   false,
                                    Hotspot.UI.APP_TITLE,
                                    Hotspot.UI.STAGE_WIDTH,
                                    Hotspot.UI.STAGE_HEIGHT);
 
+            stageManager.setStageControlButtonAlignLeft(false);
             stageManager.autoDefineHomePage();
             stageManager.activate();
         } catch (MalformedFXMLIndexFileException e) {

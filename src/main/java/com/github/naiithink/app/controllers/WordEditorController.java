@@ -9,7 +9,7 @@ import com.github.naiithink.app.models.Word;
 import com.github.naiithink.app.models.WordClass;
 import com.github.naiithink.app.models.WordDictionary;
 import com.github.naiithink.app.services.StageManager;
-import com.github.naiithink.app.services.StageManager.NaiiThinkStageManager;
+import com.github.naiithink.app.services.StageManager.TheStageManager;
 import com.github.naiithink.app.services.StageManager.PageNotFoundException;
 
 import javafx.animation.PauseTransition;
@@ -32,7 +32,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.util.Duration;
 
-@NaiiThinkStageManager
+@TheStageManager
 public final class WordEditorController {
     private WordEditorController() {}
 
@@ -96,7 +96,7 @@ public final class WordEditorController {
         wordDictionaryDataSource = WordDictionaryDataSourceController.getInstance();
     }
 
-    @NaiiThinkStageManager
+    @TheStageManager
     public static WordEditorController getInstance() {
         if (instance == null) {
             synchronized (WordEditorController.class) {
