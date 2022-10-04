@@ -788,7 +788,7 @@ public final class StageManager {
                                                                parentProperty.inheritWidth,
                                                                parentProperty.inheritHeight));
 
-                    logger.log(Level.INFO, "page added: " + pageNick + ": **/" + parentProperty.pageNickResourceName + " -> " + controllerClassName); 
+                    logger.log(Level.INFO, "Page added: " + pageNick + ": **/" + parentProperty.pageNickResourceName + " -> " + controllerClassName); 
 
                     continue;
                 } else {
@@ -833,7 +833,7 @@ public final class StageManager {
                                                            parentProperty.inheritWidth,
                                                            parentProperty.inheritHeight));
 
-                logger.log(Level.INFO, "page added: " + pageNick + ": **/" + parentProperty.pageNickResourceName + " => " + controllerClassName);
+                logger.log(Level.INFO, "Page added: " + pageNick + ": **/" + parentProperty.pageNickResourceName + " => " + controllerClassName);
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -1183,13 +1183,13 @@ public final class StageManager {
                 loader.setController(controllerInstance);
 
                 pageTable.put(pageNick, new PageMap(loader.load(),
-                                                     controllerClass,
-                                                     prefWidth,
-                                                     prefHeight,
-                                                     inheritWidth,
-                                                     inheritHeight));
+                                                    controllerClass,
+                                                    prefWidth,
+                                                    prefHeight,
+                                                    inheritWidth,
+                                                    inheritHeight));
 
-                logger.log(Level.INFO, "page added: " + pageNick + ": **/" + sceneResourcePathString);
+                logger.log(Level.INFO, "Page added: " + pageNick + ": **/" + sceneResourcePathString);
             } catch (IOException e) {
                 logger.log(Level.SEVERE, "Got 'IOException' while loading FXML resource: " + e.getMessage());
             } catch (ClassNotFoundException e) {
@@ -1303,7 +1303,8 @@ public final class StageManager {
         }
 
         if (mapOfPageToSet.inheritHeight == false) {
-            stage.setHeight(mapOfPageToSet.prefHeight.get());
+            double prefHeight = mapOfPageToSet.prefHeight.get();
+            stage.setHeight(DEFAULT_STAGE_TITLE_BAR_HEIGHT + prefHeight);
         }
 
         if (this.primaryStageStyle == null
@@ -1317,9 +1318,10 @@ public final class StageManager {
             this.primaryStageScenePage.getChildren().remove(this.currentPrimaryStageScenePage);
             this.primaryStageScenePage.getChildren().add(pageTable.get(pageNick).parent);
             this.currentPrimaryStageScenePage = pageTable.get(pageNick).parent;
-
-            this.primaryStageTitleBar.toFront();
         }
+
+        AnchorPane.setBottomAnchor(pageTable.get(pageNick).parent, 0.0);
+        this.primaryStageTitleBar.toFront();
 
         logger.log(Level.INFO, "Current page has been set to '" + pageNick + "'");
     }
@@ -1433,13 +1435,13 @@ public final class StageManager {
 
         this.primaryStageTitleBar = titleBar;
 
-        rootNode.getChildren().add(this.primaryStageTitleBar);
-        rootNode.getChildren().add(pageTable.get(homePageNick).parent);
+        rootNode.getChildren().add(0, this.primaryStageTitleBar);
+        rootNode.getChildren().add(rootNode.getChildren().size(), pageTable.get(homePageNick).parent);
 
         this.primaryStageTitleBar.toFront();
 
         AnchorPane.setTopAnchor(this.primaryStageTitleBar, 0.0);
-        AnchorPane.setBottomAnchor(pageTable.get(homePageNick).parent, 1.0);
+        AnchorPane.setBottomAnchor(pageTable.get(homePageNick).parent, 0.0);
 
         Scene rootScene = new Scene(rootNode);
 
