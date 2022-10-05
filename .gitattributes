@@ -1,0 +1,5 @@
+# Fonts
+*.ttf       -text -diff
+*.otf       -text -diff
+*.woff      -text -diff
+*.woff2     -text -diff
