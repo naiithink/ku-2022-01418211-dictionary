@@ -18,7 +18,6 @@ import com.github.naiithink.app.util.resources.MalformedDataSourceException;
 
 import javafx.application.Application;
 import javafx.stage.Stage;
-import javafx.stage.StageStyle;
 
 // @MainAppObject
 public final class App extends Application {

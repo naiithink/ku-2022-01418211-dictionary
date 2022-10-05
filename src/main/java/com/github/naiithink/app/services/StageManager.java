@@ -134,6 +134,13 @@ public final class StageManager {
     private Logger logger;
 
     /**
+     * Use custom Logger instead of StageManager's built-in
+     */
+    public void setLogger(Logger logger) {
+        this.logger = logger;
+    }
+
+    /**
      * If required, controller to be used MUST be written in singleton pattern
      * 
      * Name of the method for getting controller type instance
@@ -161,7 +168,6 @@ public final class StageManager {
      * Configuration file for this StageManager
      */
     private static Optional<Properties> stageManagerConfigProperties;
-
 
     /**
      * Path to the FXML index property file
@@ -355,7 +361,7 @@ public final class StageManager {
     /**
      * Object holding parsed record information of a certain page
      */
-    private class parentProperty {
+    private class ParentProperty {
 
         private String pageNick;
 
@@ -365,13 +371,13 @@ public final class StageManager {
 
         private Boolean inheritHeight;
 
-        private String controllerClassName;
+        private Optional<String> controllerClassName;
 
-        public parentProperty(String pageNick,
+        public ParentProperty(String pageNick,
                               String pageNickResourceName,
                               Boolean inheritWidth,
                               Boolean inheritHeight,
-                              String controllerClassName) {
+                              Optional<String> controllerClassName) {
 
             this.pageNick = pageNick;
             this.pageNickResourceName = pageNickResourceName;
@@ -396,7 +402,7 @@ public final class StageManager {
             return inheritHeight;
         }
 
-        public String getControllerClassName() {
+        public Optional<String> getControllerClassName() {
             return controllerClassName;
         }
     }
@@ -450,14 +456,14 @@ public final class StageManager {
             }
         }
 
-        public static parentProperty readProperty(boolean keyExist,
+        public static ParentProperty readProperty(boolean keyExist,
                                                   String propertyValue) throws MalformedFXMLIndexFileException {
 
             String pageNick;
             String fxmlResourceName;
             Boolean inheritWidth;
             Boolean inheritHeight;
-            String controllerClassName;
+            Optional<String> controllerClassName;
 
             Pattern p;
 
@@ -485,16 +491,22 @@ public final class StageManager {
                 fxmlResourceName = result[IndexPropertyRegex.VALIDATE_FXML_RESOURCE_NAME.groupToGet[0]].trim();
                 inheritWidth = result[IndexPropertyRegex.VALIDATE_WIDTH_INHERITANCE.groupToGet[0]].trim().equals(IndexPropertyRegex.WIDTH_INHERIT.pattern);
                 inheritHeight = result[IndexPropertyRegex.VALIDATE_HEIGHT_INHERITANCE.groupToGet[0]].trim().equals(IndexPropertyRegex.HEIGHT_INHERIT.pattern);
-                controllerClassName = result[IndexPropertyRegex.VALIDATE_CONTROLLER_NAME.groupToGet[0]].trim();
+                controllerClassName = Optional.ofNullable(result[IndexPropertyRegex.VALIDATE_CONTROLLER_NAME.groupToGet[0]]);
             } else {
                 pageNick = null;
                 fxmlResourceName = result[IndexPropertyRegex.VALIDATE_NO_KEY_FXML_RESOURCE_NAME.groupToGet[0]].trim();
                 inheritWidth = result[IndexPropertyRegex.VALIDATE_NO_KEY_WIDTH_INHERITANCE.groupToGet[0]].trim().equals(IndexPropertyRegex.WIDTH_INHERIT.pattern);
                 inheritHeight = result[IndexPropertyRegex.VALIDATE_NO_KEY_HEIGHT_INHERITANCE.groupToGet[0]].trim().equals(IndexPropertyRegex.HEIGHT_INHERIT.pattern);
-                controllerClassName = result[IndexPropertyRegex.VALIDATE_NO_KEY_CONTROLLER_NAME.groupToGet[0]].trim();
+                controllerClassName = Optional.ofNullable(result[IndexPropertyRegex.VALIDATE_NO_KEY_CONTROLLER_NAME.groupToGet[0]]);
             }
 
-            return instance.new parentProperty(pageNick, fxmlResourceName, inheritWidth, inheritHeight, controllerClassName);
+            if (controllerClassName.isPresent()) {
+                controllerClassName = controllerClassName.map(s -> {
+                    return s.trim();
+                });
+            }
+
+            return instance.new ParentProperty(pageNick, fxmlResourceName, inheritWidth, inheritHeight, controllerClassName);
         }
     }
 
@@ -598,7 +610,7 @@ public final class StageManager {
             logger.log(Level.SEVERE, "Cannot get to FXML index file");
         }
 
-        String controllerClassName;
+        Optional<String> controllerClassName;
         Class<?> controllerClass;
         Method getInstanceMethod;
         Object controllerInstance;
@@ -615,12 +627,12 @@ public final class StageManager {
             for (String pageNick : parentEntries) {
 
                 loader = new FXMLLoader();
-                controllerClassName = new String();
+                controllerClassName = Optional.empty();
 
                 prefWidth = Optional.empty();
                 prefHeight = Optional.empty();
 
-                parentProperty parentProperty = Utils.readProperty(false, resourceIndexProperties.getProperty(pageNick));
+                ParentProperty parentProperty = Utils.readProperty(false, resourceIndexProperties.getProperty(pageNick));
 
                 prefWidth = Optional.of(
                     Double.valueOf(
@@ -638,19 +650,20 @@ public final class StageManager {
                     )
                 );
 
-                if (parentProperty.controllerClassName == null) {
-                    controllerClassName = getRootXMLAttribute(fxmlResourcePrefixPath.resolve(parentProperty.pageNickResourceName),
+                if (parentProperty.controllerClassName.isPresent() == false) {
+                    controllerClassName = Optional.ofNullable(getRootXMLAttribute(fxmlResourcePrefixPath.resolve(parentProperty.pageNickResourceName),
                                                               FXMLLoader.FX_NAMESPACE_PREFIX,
-                                                              FXMLLoader.FX_CONTROLLER_ATTRIBUTE).orElseThrow(NoControllerSpecifiedException::new);
+                                                              FXMLLoader.FX_CONTROLLER_ATTRIBUTE).orElseThrow(NoControllerSpecifiedException::new)
+                    );
   
                     logger.log(Level.INFO, "Using controller declared in FXML resource file: '" + parentProperty.pageNickResourceName + "' for page pageNick: '" + pageNick + "'");
 
                     pageTable.put(pageNick, new PageMap(FXMLLoader.load(fxmlResourcePrefixPath.resolve(parentProperty.pageNickResourceName).toUri().toURL()),
-                                                               null,
-                                                               prefWidth,
-                                                               prefHeight,
-                                                               parentProperty.inheritWidth,
-                                                               parentProperty.inheritHeight));
+                                                        null,
+                                                        prefWidth,
+                                                        prefHeight,
+                                                        parentProperty.inheritWidth,
+                                                        parentProperty.inheritHeight));
 
                     logger.log(Level.INFO, "Page added: '" + pageNick + "' ::= '**/" + parentProperty.pageNickResourceName + "' -> '" + controllerClassName + "'"); 
 
@@ -662,7 +675,7 @@ public final class StageManager {
                     logger.log(Level.INFO, "Using controller declared in FXML index property file: '" + fxmlResourceIndexPath.getFileName().toString() + "' for page pageNick: '" + pageNick + "'");
                 }
 
-                controllerClass = Class.forName(controllerClassName);
+                controllerClass = Class.forName(controllerClassName.get());
 
                 if (controllerClass.isAnnotationPresent(StageManager.TheStageManager.class) == false) {
                     /**
@@ -691,11 +704,11 @@ public final class StageManager {
                 parent = loader.load();
 
                 pageTable.put(pageNick, new PageMap(parent,
-                                                           controllerClass,
-                                                           prefWidth,
-                                                           prefHeight,
-                                                           parentProperty.inheritWidth,
-                                                           parentProperty.inheritHeight));
+                                                    controllerClass,
+                                                    prefWidth,
+                                                    prefHeight,
+                                                    parentProperty.inheritWidth,
+                                                    parentProperty.inheritHeight));
 
                 logger.log(Level.INFO, "Page added: '" + pageNick + "' ::= '**/" + parentProperty.pageNickResourceName + "' => '" + controllerClassName + "'");
             }
@@ -973,8 +986,8 @@ public final class StageManager {
             }
 
                 homePageNick = Optional.ofNullable(parentProperty.split("\\s*\\=")[0])
-                                      .filter(s -> pageTable.containsKey(s))
-                                      .get();
+                                       .filter(s -> pageTable.containsKey(s))
+                                       .get();
 
                 logger.log(Level.INFO, "Defined home page to '" + homePageNick + "'");
 
@@ -1514,9 +1527,30 @@ public final class StageManager {
             System.exit(1);
         }
 
+        double prefPageHeight;
+        double prefStageHeight;
+
+        double prefPageWidth;
+        double prefStageWidth;
+
         this.primaryStage.initStyle(stageStyle);
 
-        this.primaryStage.setHeight(DEFAULT_STAGE_TITLE_BAR_HEIGHT + this.primaryStageHeight);
+        if (this.pageTable.get(this.homePageNick).inheritHeight) {
+            prefPageHeight = this.primaryStageHeight;
+        } else {
+            prefPageHeight = pageTable.get(homePageNick).prefHeight.get();
+        }
+        
+        if (this.pageTable.get(this.homePageNick).inheritWidth) {
+            prefPageWidth = this.primaryStageWidth;
+        } else {
+            prefPageWidth = pageTable.get(homePageNick).prefWidth.get();
+        }
+        
+        prefStageWidth = prefPageWidth;
+        prefStageHeight = DEFAULT_STAGE_TITLE_BAR_HEIGHT + prefPageHeight;
+
+        this.primaryStage.setHeight(prefStageHeight);
 
         AnchorPane rootNode = new AnchorPane();
 
@@ -1524,7 +1558,7 @@ public final class StageManager {
 
         TitleBar titleBar = new TitleBar(this.primaryStage,
                                          this.primaryStageTitle,
-                                         this.primaryStageWidth,
+                                         prefStageWidth,
                                          DEFAULT_STAGE_TITLE_BAR_HEIGHT);
 
         rootNode.widthProperty().addListener((observer, oldValue, newValue) -> {
@@ -1539,12 +1573,12 @@ public final class StageManager {
             this.primaryStageScenePage.setPrefHeight((double) newValue - DEFAULT_STAGE_TITLE_BAR_HEIGHT);
         });
 
-        rootNode.setPrefHeight(DEFAULT_STAGE_TITLE_BAR_HEIGHT + this.primaryStageHeight);
+        rootNode.setPrefHeight(prefStageHeight);
 
         this.primaryStageTitleBar = titleBar;
 
-        rootNode.getChildren().add(0, this.primaryStageTitleBar);
-        rootNode.getChildren().add(rootNode.getChildren().size(), pageTable.get(homePageNick).parent);
+        rootNode.getChildren().add(this.primaryStageTitleBar);
+        rootNode.getChildren().add(pageTable.get(homePageNick).parent);
 
         this.primaryStageTitleBar.toFront();
 
