@@ -49,6 +49,8 @@ public final class App extends Application {
 
         StageManager stageManager = StageManager.getStageManager();
 
+        stageManager.loadFontsFrom(ResourcePrefix.getPrefix().resolve("fonts").resolve("pool"), 14);
+
         try {
             stageManager.bindStage(ResourcePrefix.getPrefix().resolve(Hotspot.Resource.ResourceIndex.getProperty("index.dir.fxml"))
                                                              .resolve(Hotspot.Resource.ResourceIndex.getProperty("index.file.fxml")),
@@ -66,7 +68,6 @@ public final class App extends Application {
                 stageManager.setStageControlButtonAlignLeft(false);
             }
 
-            stageManager.loadFontsFrom(ResourcePrefix.getPrefix().resolve("fonts").resolve("pool"), 14);
             stageManager.autoDefineHomePage();
             stageManager.activate();
         } catch (MalformedFXMLIndexFileException e) {
