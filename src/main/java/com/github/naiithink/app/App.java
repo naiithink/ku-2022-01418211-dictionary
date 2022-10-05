@@ -10,7 +10,6 @@ import java.util.logging.Logger;
 import com.github.naiithink.app.controllers.WordDictionaryDataSourceController;
 import com.github.naiithink.app.helpers.ResourcePrefix;
 import com.github.naiithink.app.hotspot.Hotspot;
-import com.github.naiithink.app.hotspot.Hotspot.Resource;
 import com.github.naiithink.app.models.Word;
 import com.github.naiithink.app.models.WordDictionary;
 import com.github.naiithink.app.services.StageManager;
@@ -49,7 +48,7 @@ public final class App extends Application {
 
         StageManager stageManager = StageManager.getStageManager();
 
-        stageManager.loadFontsFrom(ResourcePrefix.getPrefix().resolve("fonts").resolve("pool"), 14);
+        stageManager.loadFontsFrom(ResourcePrefix.getPrefix().resolve(Hotspot.Resource.ResourceIndex.getProperty("fonts.dir")), 14.0);
 
         try {
             stageManager.bindStage(ResourcePrefix.getPrefix().resolve(Hotspot.Resource.ResourceIndex.getProperty("index.dir.fxml"))
