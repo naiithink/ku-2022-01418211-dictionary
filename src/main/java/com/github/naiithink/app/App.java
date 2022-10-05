@@ -1,5 +1,7 @@
 package com.github.naiithink.app;
 
+import java.io.FileNotFoundException;
+import java.nio.file.NotDirectoryException;
 import java.util.List;
 import java.util.Optional;
 import java.util.logging.Level;
@@ -8,6 +10,7 @@ import java.util.logging.Logger;
 import com.github.naiithink.app.controllers.WordDictionaryDataSourceController;
 import com.github.naiithink.app.helpers.ResourcePrefix;
 import com.github.naiithink.app.hotspot.Hotspot;
+import com.github.naiithink.app.hotspot.Hotspot.Resource;
 import com.github.naiithink.app.models.Word;
 import com.github.naiithink.app.models.WordDictionary;
 import com.github.naiithink.app.services.StageManager;
@@ -25,7 +28,7 @@ public final class App extends Application {
     private Logger logger;
 
     @Override
-    public void start(Stage primaryStage) {
+    public void start(Stage primaryStage) throws NotDirectoryException, FileNotFoundException {
         configLogger();
 
         Hotspot.Resource.ResourceIndex.readResourceIndex();
@@ -41,7 +44,9 @@ public final class App extends Application {
         logger.log(Level.INFO, "Logger configuration has been set");
     }
 
-    private void configStageManager(Stage primaryStage) {
+    private void configStageManager(Stage primaryStage) throws NotDirectoryException,
+                                                               FileNotFoundException {
+
         StageManager stageManager = StageManager.getStageManager();
 
         try {
@@ -61,6 +66,7 @@ public final class App extends Application {
                 stageManager.setStageControlButtonAlignLeft(false);
             }
 
+            stageManager.loadFontsFrom(ResourcePrefix.getPrefix().resolve("fonts").resolve("pool"), 14);
             stageManager.autoDefineHomePage();
             stageManager.activate();
         } catch (MalformedFXMLIndexFileException e) {

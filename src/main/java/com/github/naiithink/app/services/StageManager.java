@@ -26,9 +26,12 @@ import java.lang.annotation.Target;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
+import java.nio.file.NotDirectoryException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -36,6 +39,7 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Level;
@@ -200,6 +204,13 @@ public final class StageManager {
      * The primary Stage of the application
      */
     private Stage primaryStage;
+
+    /**
+     * If true, Stages constructed by this StageManager will always positioned at the center of current Screen.
+     * Otherwise, Stage will never be re-positioned.
+     * Defaults to true.
+     */
+    private boolean alwaysCenteredStage;
 
     /**
      * StageStyle of the primary Stage
@@ -524,6 +535,7 @@ public final class StageManager {
     private StageManager() {
         logger = Logger.getLogger(getClass().getName());
 
+        alwaysCenteredStage = true;
         pageTable = new ConcurrentHashMap<>();
         resourceIndexProperties = new Properties();
 
@@ -665,7 +677,7 @@ public final class StageManager {
                                                         parentProperty.inheritWidth,
                                                         parentProperty.inheritHeight));
 
-                    logger.log(Level.INFO, "Page added: '" + pageNick + "' ::= '**/" + parentProperty.pageNickResourceName + "' -> '" + controllerClassName + "'"); 
+                    logger.log(Level.INFO, "Page added: '" + pageNick + "' ::= '**/" + parentProperty.pageNickResourceName + "' -> '" + controllerClassName.get() + "'"); 
 
                     continue;
                 } else {
@@ -710,7 +722,7 @@ public final class StageManager {
                                                     parentProperty.inheritWidth,
                                                     parentProperty.inheritHeight));
 
-                logger.log(Level.INFO, "Page added: '" + pageNick + "' ::= '**/" + parentProperty.pageNickResourceName + "' => '" + controllerClassName + "'");
+                logger.log(Level.INFO, "Page added: '" + pageNick + "' ::= '**/" + parentProperty.pageNickResourceName + "' => '" + controllerClassName.get() + "'");
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -1249,6 +1261,10 @@ public final class StageManager {
         AnchorPane.setBottomAnchor(pageTable.get(pageNick).parent, 0.0);
         this.primaryStageTitleBar.toFront();
 
+        if (this.alwaysCenteredStage) {
+            this.primaryStage.centerOnScreen();
+        }
+
         logger.log(Level.INFO, "Current page has been set to '" + pageNick + "'");
     }
 
@@ -1320,6 +1336,10 @@ public final class StageManager {
 
         this.primaryStage.show();
 
+        if (this.alwaysCenteredStage) {
+            this.primaryStage.centerOnScreen();
+        }
+
         logger.log(Level.INFO, "Activated Stage");
     }
 
@@ -1357,6 +1377,16 @@ public final class StageManager {
      */
     public void activateSubstage(String pageNick) throws PageNotFoundException {
         activateSubstage(primaryStage, pageNick);
+    }
+
+    /**
+     * Sets default Stage alignment on the current Screen
+     * Defaults to true.
+     * 
+     * @param       alwaysCenteredStage     If true, Stages constructed by this StageManager will always positioned at the center of current Screen. Otherwise, Stage will never be re-positioned.
+     */
+    public void setAlwaysCenteredStage(boolean alwaysCenteredStage) {
+        this.alwaysCenteredStage = alwaysCenteredStage;
     }
 
     /**
@@ -1437,7 +1467,7 @@ public final class StageManager {
 
         public static final int[] TOP_RIGHT = { 2, 0 };
 
-        public static final int CENTRE      = 0b1111;
+        public static final int CENTER      = 0b1111;
 
         public static final int TOP         = 0b0001;
 
@@ -1506,8 +1536,10 @@ public final class StageManager {
     public void setCustomTitleBarTo(String customTitleBarPageNick) {}
 
     /**
-     * When using custom Stage, sets the Stage control button box alignment to left
-     * Defaults to true.
+     * When using custom Stage, sets default Stage control button box alignment on the title bar
+     * Defaults to true, which means, left-aligned.
+     * 
+     * @param       isStageControlButtonAlignLeft       If true sets the Stage control button box alignment to left. Otherwise, stick it to the left of title bar.
      */
     public void setStageControlButtonAlignLeft(boolean isStageControlButtonAlignLeft) {
         TitleBar.stageControlButtonBoxPositionLeft = isStageControlButtonAlignLeft;
@@ -2148,7 +2180,20 @@ public final class StageManager {
     /**
      * @section Fonts
      */
-    static {}
+
+    /**
+     * Set containing all expected Font resource content type; MIME
+     */
+    private static Set<String> FONT_CONTENT_TYPE_ARRAY;
+
+    static {
+        FONT_CONTENT_TYPE_ARRAY = new TreeSet<>();
+
+        FONT_CONTENT_TYPE_ARRAY.add("font/ttf");
+        FONT_CONTENT_TYPE_ARRAY.add("font/otf");
+        FONT_CONTENT_TYPE_ARRAY.add("font/woff");
+        FONT_CONTENT_TYPE_ARRAY.add("font/woff2");
+    }
 
     private void initializeSectionFont() {
         fontTable = new ConcurrentHashMap<>();
@@ -2166,4 +2211,64 @@ public final class StageManager {
      * @note Use during development
      */
     private Font currentFont;
+
+    /**
+     * Loads Fonts from a directory
+     * 
+     * @param       fontDirPath     Directory containing all the Fonts to be loaded
+     * @param       fontSize        Default Font size
+     * 
+     * @throws      FileNotFoundException       when Path does not exist
+     * @throws      NotDirectoryException       when Path does not point to a directory
+     */
+    public void loadFontsFrom(Path fontDirPath,
+                              double fontSize) throws FileNotFoundException,
+                                                      NotDirectoryException {
+
+        if (Files.exists(fontDirPath) == false) {
+            logger.log(Level.SEVERE, "Font directory does not exist: " + fontDirPath.toString());
+
+            throw new FileNotFoundException(fontDirPath.toString());
+        } else if (Files.isDirectory(fontDirPath) == false) {
+            logger.log(Level.SEVERE, "Not directory: " + fontDirPath.toString());
+
+            throw new NotDirectoryException(fontDirPath.toString());
+        }
+
+        int fontLoadCount = 0;
+
+        try (DirectoryStream<Path> dirs = Files.newDirectoryStream(fontDirPath)) {
+
+            for (Path entry : dirs) {
+                if (FONT_CONTENT_TYPE_ARRAY.contains(Files.probeContentType(entry)) == false) {
+                    continue;
+                }
+
+                try (InputStream in = Files.newInputStream(entry)) {
+
+                    Font font = Font.loadFont(in, fontSize);
+
+                    fontTable.put(font.getName(), font);
+
+                    fontLoadCount++;
+                    logger.log(Level.INFO, "Loaded font: '" + font.getName() + "', size: " + font.getSize());
+                }
+            }
+        } catch (IOException e) {
+            logger.log(Level.SEVERE, "Cannot reach font directory, got 'IOException'");
+
+            System.exit(1);
+        } finally {
+            logger.log(Level.INFO, Integer.toString(fontLoadCount) + "font" + (fontLoadCount == 1 ? "" : "s") + "loaded");
+        }
+    }
+
+    /**
+     * Gets the unmodifiable Font table containing all loaded Fonts
+     * 
+     * @see loadFontsFrom
+     */
+    public Map<String, Font> getFontTable() {
+        return Collections.unmodifiableMap(fontTable);
+    }
 }
