@@ -1,5 +1,7 @@
 # CS211 - Lab 11-12 Dictionary
 
+> This project was developed in 2022 and no longer active
+
 ส่งงานที่ https://classroom.github.com/a/zFxVAMJK
 
 ให้นิสิตสร้าง JavaFX Application สำหรับเพิ่มคำศัพท์ และความหมายในพจนานุกรม
