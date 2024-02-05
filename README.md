@@ -2,6 +2,8 @@
 
 > This project was developed in 2022 and no longer active
 
+![naiithink-dictionary.png](assets/images/naiithink-dictionary.png)
+
 ส่งงานที่ https://classroom.github.com/a/zFxVAMJK
 
 ให้นิสิตสร้าง JavaFX Application สำหรับเพิ่มคำศัพท์ และความหมายในพจนานุกรม
